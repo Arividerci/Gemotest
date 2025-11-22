@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DC9CCD6F-8C58-4810-8675-A6AF3866A135}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Laboratory.Gemotest</RootNamespace>
+    <AssemblyName>Laboratory.Gemotest</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BarcodeScannerMonitor">
+      <HintPath>..\..\Components\BarcodeScannerMonitor.dll</HintPath>
+    </Reference>
+    <Reference Include="ClinicCommon">
+      <HintPath>..\..\Components\ClinicCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="ClinicLaboratoryCommon">
+      <HintPath>..\..\Components\ClinicLaboratoryCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="ClinicLogging">
+      <HintPath>..\..\Components\ClinicLogging.dll</HintPath>
+    </Reference>
+    <Reference Include="ClinicScannerManager">
+      <HintPath>..\..\Components\ClinicScannerManager.dll</HintPath>
+    </Reference>
+    <Reference Include="ClinicStatisticsCollectionSystemTitles">
+      <HintPath>..\..\Components\ClinicStatisticsCollectionSystemTitles.dll</HintPath>
+    </Reference>
+    <Reference Include="ContainerMarkerCommon">
+      <HintPath>..\..\Components\ContainerMarkerCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="HL7Converter">
+      <HintPath>..\..\Components\HL7Converter.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>..\..\Components\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="itextsharp">
+      <HintPath>..\..\Components\itextsharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Components\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PrintCommon">
+      <HintPath>..\..\Components\PrintCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="StatisticsCollectionSystemClient">
+      <HintPath>..\..\Components\StatisticsCollectionSystemClient.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WordReport">
+      <HintPath>..\..\Components\WordReport.dll</HintPath>
+    </Reference>
+    <Reference Include="zxing">
+      <HintPath>..\..\Components\zxing.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="GemotestOrderDetails.cs" />
+    <Compile Include="SourseClass\Dictionaries.cs" />
+    <Compile Include="LaboratoryGemotest.cs" />
+    <Compile Include="LaboratoryGemotestGUI.cs" />
+    <Compile Include="Options\GemotestService.cs" />
+    <Compile Include="Options\GemotestWSDL.cs" />
+    <Compile Include="Options\LocalOptionsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Options\LocalOptionsForm.Designer.cs">
+      <DependentUpon>LocalOptionsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Options\OptionsFormsGemotest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Options\OptionsFormsGemotest.Designer.cs">
+      <DependentUpon>OptionsFormsGemotest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Options\LocalOptionsGemotest.cs" />
+    <Compile Include="Options\OptionsGemotest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SourseClass\ProductGemotest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Options\LocalOptionsForm.resx">
+      <DependentUpon>LocalOptionsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Options\OptionsFormsGemotest.resx">
+      <DependentUpon>OptionsFormsGemotest.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

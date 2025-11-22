@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gemotest", "Gemotest\Gemotest.csproj", "{5426D64C-B833-4C65-BF3F-00D8E97355BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Laboratory.Gemotest", "Laboratory.Gemotest\Laboratory.Gemotest.csproj", "{DC9CCD6F-8C58-4810-8675-A6AF3866A135}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5426D64C-B833-4C65-BF3F-00D8E97355BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5426D64C-B833-4C65-BF3F-00D8E97355BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5426D64C-B833-4C65-BF3F-00D8E97355BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5426D64C-B833-4C65-BF3F-00D8E97355BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC9CCD6F-8C58-4810-8675-A6AF3866A135}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC9CCD6F-8C58-4810-8675-A6AF3866A135}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC9CCD6F-8C58-4810-8675-A6AF3866A135}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC9CCD6F-8C58-4810-8675-A6AF3866A135}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8E824B7B-91EE-468D-840F-CF68FA90E78A}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,51 @@
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.AssemblyReference.cache
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.OptionsFormsGemotest.resources
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.GenerateResource.cache
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.CoreCompileInputs.cache
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\Laboratory.Gemotest.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\BarcodeScannerMonitor.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicLaboratoryCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicLogging.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicScannerManager.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicStatisticsCollectionSystemTitles.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ContainerMarkerCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\HL7Converter.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\itextsharp.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\PrintCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\StatisticsCollectionSystemClient.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\WordReport.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\bin\Debug\zxing.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.LocalOptionsForm.resources
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laborato.6E2FAB54.Up2Date
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.dll
+C:\Users\Night\OneDrive\Desktop\ВКР\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\Laboratory.Gemotest.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\BarcodeScannerMonitor.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicLaboratoryCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicLogging.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicScannerManager.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ClinicStatisticsCollectionSystemTitles.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ContainerMarkerCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\HL7Converter.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\itextsharp.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\PrintCommon.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\StatisticsCollectionSystemClient.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\WordReport.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\zxing.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.AssemblyReference.cache
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.LocalOptionsForm.resources
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.OptionsFormsGemotest.resources
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.GenerateResource.cache
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.CoreCompileInputs.cache
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laborato.6E2FAB54.Up2Date
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.dll
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Laboratory.Gemotest\bin\Debug\Laboratory.Gemotest.dll.config

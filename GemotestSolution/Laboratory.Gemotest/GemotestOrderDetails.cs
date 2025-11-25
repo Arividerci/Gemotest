@@ -382,6 +382,65 @@ namespace Laboratory.Gemotest.SourseClass
             DeleteProductFromDetails(productIndex);
         }
 
+        public List<string> GetServiceIdsForCreateOrder()
+        {
+            var result = new List<string>();
+
+            if (Products == null)
+                return result;
+
+            foreach (var p in Products)
+            {
+                if (string.IsNullOrEmpty(p.ProductId))
+                    continue;
+
+                var service = Dictionaries.Directory?
+                    .FirstOrDefault(s => s.id == p.ProductId);
+
+                if (service == null)
+                    continue;
+
+                if (service.service_type == 2)
+                {
+                    if (!result.Contains(p.ProductId))
+                        result.Add(p.ProductId);
+
+                    var complexItems = Dictionaries.MarketingComplexComposition?
+                        .Where(m => m.complex_id == p.ProductId)
+                        .ToList();
+
+                    if (complexItems != null && complexItems.Count > 0)
+                    {
+                        foreach (var item in complexItems)
+                        {
+                            if (!string.IsNullOrEmpty(item.service_id) &&
+                                !result.Contains(item.service_id))
+                            {
+                                result.Add(item.service_id);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (!result.Contains(p.ProductId))
+                        result.Add(p.ProductId);
+                }
+            }
+
+            return result;
+        }
+
+       /* var details = (GemotestOrderDetail)_Order.OrderDetail;
+
+        // Все сервисы, которые должны реально уйти в заказ
+        List<string> servicesForSend = details.GetServiceIdsForCreateOrder();
+
+        // дальше по servicesForSend заполняешь:
+        // - массив services (верхний список услуг)
+        // - services в order_samples (для проб)*/
+
+
         public void DeleteProductFromDetails(int productIndex)
         {
             List<GemotestDetail> toDelete = new List<GemotestDetail>();

@@ -98,6 +98,7 @@ namespace Laboratory.Gemotest
                         productNew.ProductGroupGuid = null;
 
                         BiomaterialGroupForGUI groupForGUI = new BiomaterialGroupForGUI();
+                        BiomaterialInfoForGUI biomInfo_ = new BiomaterialInfoForGUI();
 
                         foreach (var biomaterialInfo in details.BioMaterials)
                         {
@@ -150,13 +151,15 @@ namespace Laboratory.Gemotest
                                 }
 
                                 groupForGUI.Biomaterials.Add(biomInfo);
-                                if (details.BioMaterials.Count == 1)
-                                    groupForGUI.BiomaterialsSelected.Add(biomInfo);
+                                groupForGUI.SelectOnlyOne = true;
+                                biomInfo_ = biomInfo;
                             }
                         }
+                        if (groupForGUI.Biomaterials.Count < 2)
+                            groupForGUI.BiomaterialsSelected.Add(biomInfo_);
 
                         productNew.BiomaterialGroups.Add(groupForGUI);
-
+                        
                         _Model.ProductsInfo.Add(productNew);
                     }
                  
@@ -281,43 +284,26 @@ namespace Laboratory.Gemotest
         public bool ProcessOrderGUIAction(eOrderAction _Action, Order _Order, ref OrderModelForGUI _OrderModel, ProductInfoForGUI _Product)
         {
             LastException = null;
-
             try
             {
-                // Всегда сразу приводим детали к нужному типу
-                var details = (GemotestOrderDetail)_Order.OrderDetail;
-
-                // ---------------- УДАЛЕНИЕ ПРОДУКТА ----------------
                 if (_Action == eOrderAction.RemoveProduct)
                 {
-                    if (_Product == null)
-                        return true;
-
                     int productIndex = _OrderModel.ProductsInfo.IndexOf(_Product);
-                    if (productIndex < 0)
-                        return true;
-
-                    // 1) Убираем из модели и деталей
-                    _OrderModel.ProductsInfo.RemoveAt(productIndex);
+                    _OrderModel.ProductsInfo.Remove(_Product);
+                    GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
                     details.DeleteProduct(productIndex);
 
-                    // 2) Переиндексируем OrderProductGuid в GUI и в деталях
                     for (int i = 0; i < _OrderModel.ProductsInfo.Count; i++)
-                        _OrderModel.ProductsInfo[i].OrderProductGuid = i.ToString();
-
-                    for (int i = 0; i < details.Products.Count; i++)
-                        details.Products[i].OrderProductGuid = i.ToString();
-
-                    // 3) Сохраняем модель → детали
+                    {
+                        ProductInfoForGUI curProductInfo = _OrderModel.ProductsInfo[i];
+                        curProductInfo.OrderProductGuid = i.ToString();
+                    }
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
                         return false;
 
-                    // 4) Пересчитываем биоматериалы и группы
                     details.AddBiomaterialsFromProducts();
                     details.DeleteObsoleteDetails();
-                    RebuildBiomaterialGroups(details, _OrderModel);
 
-                    // 5) Образцы и поля
                     if (!GenerateSamples(_Order, _OrderModel))
                         return false;
 
@@ -327,38 +313,40 @@ namespace Laboratory.Gemotest
                     return true;
                 }
 
-                // ---------------- ДОБАВЛЕНИЕ ПРОДУКТА ----------------
                 if (_Action == eOrderAction.AddProduct)
                 {
                     List<ProductInfoForGUI> products = new List<ProductInfoForGUI>();
                     List<ProductGroupInfoForGUI> productGroups = new List<ProductGroupInfoForGUI>();
 
-                    // Список доступных услуг из AllProducts (уже отфильтрован по service_type / IsBlocked)
                     foreach (var prod in AllProducts)
                     {
-                        products.Add(new ProductInfoForGUI
+                        products.Add(new ProductInfoForGUI()
                         {
                             OrderProductGuid = Guid.NewGuid().ToString(),
-                            Id = prod.ID,      // ID у тебя уже строка
+                            Id = prod.ID,
                             Code = prod.Code,
                             Name = prod.Name,
                             ProductGroupGuid = null
                         });
                     }
 
-                    // Форма выбора продукта
                     FormLaboratoryChooseOfProduct form = new FormLaboratoryChooseOfProduct(null, products, productGroups);
                     if (form.ShowDialog() != DialogResult.OK)
                         return false;
 
+                    GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
                     ProductInfoForGUI productNew = products.Find(x => x.OrderProductGuid == form.selectedProductGuid);
                     if (productNew == null)
                         return false;
 
-                    // *** Проверка: такая услуга уже есть в заказе? ***
+                    // === маркетинговый комплекс: уточняем услугу (IRON/FERRITIN/...) ===
+                    productNew = ResolveMarketingComplex(productNew);
+                    if (productNew == null)
+                        return false; // пользователь отменил выбор в форме комплекса
+
+                    // Проверка: такая услуга уже есть в заказе?
                     if (details.Products != null &&
-                        details.Products.Any(p =>
-                            string.Equals(p.ProductId, productNew.Id, StringComparison.OrdinalIgnoreCase)))
+                        details.Products.Any(p => string.Equals(p.ProductId, productNew.Id, StringComparison.OrdinalIgnoreCase)))
                     {
                         MessageBox.Show(
                             "Эта услуга уже есть в заказе.",
@@ -368,13 +356,13 @@ namespace Laboratory.Gemotest
                         return false;
                     }
 
-                    // 1) Добавляем выбранную услугу
+                    // Индекс новой позиции
                     int newIndex = details.Products.Count;
 
                     productNew.OrderProductGuid = newIndex.ToString();
                     _OrderModel.ProductsInfo.Add(productNew);
 
-                    GemotestProductDetail productInfo = new GemotestProductDetail
+                    GemotestProductDetail productInfo = new GemotestProductDetail()
                     {
                         OrderProductGuid = productNew.OrderProductGuid,
                         ProductId = productNew.Id,
@@ -384,22 +372,14 @@ namespace Laboratory.Gemotest
 
                     details.Products.Add(productInfo);
 
-                    // 2) Автодобавление по справочнику service_auto_insert
+                    // авто-добавление услуг по Service_auto_insert (если уже сделал этот метод)
                     ApplyAutoInsertServices(details, _OrderModel);
 
-                    // На всякий случай переиндексируем после auto-insert
-                    for (int i = 0; i < details.Products.Count; i++)
-                        details.Products[i].OrderProductGuid = i.ToString();
-
-                    for (int i = 0; i < _OrderModel.ProductsInfo.Count; i++)
-                        _OrderModel.ProductsInfo[i].OrderProductGuid = i.ToString();
-
-                    // 3) Пересчёт биоматериалов и групп
+                    // Пересчитать биоматериалы и группы
                     details.AddBiomaterialsFromProducts();
-                    details.DeleteObsoleteDetails();
+
                     RebuildBiomaterialGroups(details, _OrderModel);
 
-                    // 4) Сохранение + образцы/поля
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
                         return false;
 
@@ -412,7 +392,6 @@ namespace Laboratory.Gemotest
                     return true;
                 }
 
-                // ---------------- ПОДГОТОВКА К ОТПРАВКЕ ----------------
                 if (_Action == eOrderAction.PrepareOrderForSend)
                 {
                     if (!PrepareOrderForSend(_Order))
@@ -427,6 +406,68 @@ namespace Laboratory.Gemotest
                 return false;
             }
         }
+
+        private ProductInfoForGUI ResolveMarketingComplex(ProductInfoForGUI selectedProduct)
+        {
+            if (selectedProduct == null || string.IsNullOrEmpty(selectedProduct.Id))
+                return selectedProduct;
+
+            var service = Dictionaries.Directory?.FirstOrDefault(s => s.id == selectedProduct.Id);
+            if (service == null)
+                return selectedProduct;
+
+            // Ищем состав маркетингового комплекса по complex_id
+            var complexItems = Dictionaries.MarketingComplexComposition?
+                .Where(m => m.complex_id == service.id)
+                .ToList();
+
+            // Нет состава – значит это не маркетинговый комплекс (или данных нет)
+            if (complexItems == null || complexItems.Count == 0)
+                return selectedProduct;
+
+            // Собираем варианты (IRON, FERRITIN, ...), которые входят в этот комплекс
+            var complexProducts = new List<ProductInfoForGUI>();
+            foreach (var item in complexItems)
+            {
+                if (string.IsNullOrEmpty(item.service_id))
+                    continue;
+
+                var childService = Dictionaries.Directory.FirstOrDefault(s => s.id == item.service_id);
+                if (childService == null)
+                    continue;
+
+                complexProducts.Add(new ProductInfoForGUI
+                {
+                    OrderProductGuid = Guid.NewGuid().ToString(),
+                    Id = childService.id,
+                    Code = childService.code,
+                    Name = childService.name,
+                    ProductGroupGuid = null
+                });
+            }
+
+            // Если по факту только один вариант – нечего уточнять, просто используем его
+            if (complexProducts.Count == 0)
+                return selectedProduct;
+
+            if (complexProducts.Count == 1)
+                return complexProducts[0];
+
+            // Несколько вариантов: показываем форму выбора (IRON / FERRITIN ...)
+
+            var groups = new List<ProductGroupInfoForGUI>();
+            var form = new FormLaboratoryChooseOfProduct(
+                "Выберите услугу маркетингового комплекса",
+                complexProducts,
+                groups);
+
+            if (form.ShowDialog() != DialogResult.OK)
+                return null; // пользователь отказался
+
+            var chosen = complexProducts.FirstOrDefault(p => p.OrderProductGuid == form.selectedProductGuid);
+            return chosen ?? selectedProduct;
+        }
+
 
         private void RebuildBiomaterialGroups(GemotestOrderDetail details, OrderModelForGUI model)
         {
@@ -502,7 +543,7 @@ namespace Laboratory.Gemotest
                 group.Biomaterials.Add(biomInfo);
             }
 
-            group.SelectOnlyOne = (serviceType != 2);
+            group.SelectOnlyOne = true;
 
             var mandatoryBioms = linkedBioms
                 .Where(b => b.Mandatory.Contains(productIndex))

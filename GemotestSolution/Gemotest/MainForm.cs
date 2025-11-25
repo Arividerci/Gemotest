@@ -98,13 +98,11 @@ namespace Gemotest
         {
             Order order = new Order(laboratoryGemotest.CreateOrderDetail()) { Number = "1" };
           
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[3], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[30], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[432], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[528], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[728], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1528], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[938], 1, 1));
+            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[130], 1, 1));
+            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1328], 1, 1));
+            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1128], 1, 1));
+            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1828], 1, 1));
+            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1938], 1, 1));
             order.Patient.Surname = "Тестовая";
             order.Patient.Name = "Тестина";
             order.Patient.Patronimic = "Тестовина";

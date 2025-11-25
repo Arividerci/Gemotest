@@ -105,8 +105,6 @@ namespace Gemotest
             order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[728], 1, 1));
             order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1528], 1, 1));
             order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[938], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[724], 1, 1));
-            order.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1111], 1, 1));
             order.Patient.Surname = "Тестовая";
             order.Patient.Name = "Тестина";
             order.Patient.Patronimic = "Тестовина";

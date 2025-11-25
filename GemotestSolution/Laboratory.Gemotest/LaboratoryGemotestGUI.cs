@@ -150,7 +150,6 @@ namespace Laboratory.Gemotest
                                 }
 
                                 groupForGUI.Biomaterials.Add(biomInfo);
-                                groupForGUI.SelectOnlyOne = true;
                                 if (details.BioMaterials.Count == 1)
                                     groupForGUI.BiomaterialsSelected.Add(biomInfo);
                             }
@@ -418,13 +417,15 @@ namespace Laboratory.Gemotest
                                 }
 
                                 groupForGUI.Biomaterials.Add(biomInfo);
-                                groupForGUI.BiomaterialsSelected.Add(biomInfo);
+                                if (details.BioMaterials.Count < 2 )
+                                    groupForGUI.BiomaterialsSelected.Add(biomInfo);
                             }
                         }
 
                         guiProduct.BiomaterialGroups.Add(groupForGUI);
                     }
 
+                    
 
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
                         return false;
@@ -522,39 +523,32 @@ namespace Laboratory.Gemotest
             if (details == null || details.Products == null)
                 return;
 
-            // нет справочника — нечего делать
             if (Dictionaries.ServiceAutoInsert == null || Dictionaries.ServiceAutoInsert.Count == 0)
                 return;
 
-            // текущие id услуг, уже добавленных в заказ
             var existingServiceIds = new HashSet<string>(
                 details.Products
                        .Where(p => !string.IsNullOrEmpty(p.ProductId))
                        .Select(p => p.ProductId)
             );
 
-            // На всякий случай – если AllProducts не инициализирован, auto_insert просто пропустим
             if (AllProducts == null || AllProducts.Count == 0)
                 return;
 
             foreach (var rule in Dictionaries.ServiceAutoInsert.Where(x => x.archive == 0))
             {
-                // В заказе должна быть базовая услуга
                 if (!existingServiceIds.Contains(rule.service_id))
                     continue;
 
-                // Автодобавляемая уже есть в заказе – пропускаем
                 if (existingServiceIds.Contains(rule.auto_service_id))
                     continue;
 
-                // Проверяем, что автодобавляемая услуга вообще есть в прайс-листе клиники
                 var autoProduct = AllProducts.FirstOrDefault(p => p.ID == rule.auto_service_id);
                 if (autoProduct == null)
-                    continue; // для этой клиники услуга недоступна – не добавляем
+                    continue; 
 
                 int newIndex = details.Products.Count;
 
-                // Добавляем в детализацию заказа
                 var autoDetail = new GemotestOrderDetail.GemotestProductDetail
                 {
                     OrderProductGuid = newIndex.ToString(),
@@ -564,7 +558,6 @@ namespace Laboratory.Gemotest
                 };
                 details.Products.Add(autoDetail);
 
-                // Добавляем в модель для GUI
                 var autoGui = new ProductInfoForGUI
                 {
                     OrderProductGuid = autoDetail.OrderProductGuid,

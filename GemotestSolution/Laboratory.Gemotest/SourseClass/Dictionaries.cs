@@ -1365,17 +1365,21 @@ namespace Laboratory.Gemotest.GemotestRequests
                     foreach (XmlNode node in autoInsertNodes)
                     {
                         var serviceIdNode = node.SelectSingleNode("*[local-name()='service_id']");
-                        var autoServiceIdNode = node.SelectSingleNode("*[local-name()='auto_service_id']");
+                        var autoServiceIdNode =
+                            node.SelectSingleNode("*[local-name()='auto_insert_service_id']") ??
+                            node.SelectSingleNode("*[local-name()='auto_service_id']");
+
                         var archiveNode = node.SelectSingleNode("*[local-name()='archive']");
 
                         int archiveValue = ParseArchive(archiveNode);
 
                         var autoInsert = new DictionaryServiceAutoInsert
                         {
-                            service_id = serviceIdNode?.InnerText ?? string.Empty,
-                            auto_service_id = autoServiceIdNode?.InnerText ?? string.Empty,
+                            service_id = (serviceIdNode?.InnerText ?? string.Empty).Trim(),
+                            auto_service_id = (autoServiceIdNode?.InnerText ?? string.Empty).Trim(),
                             archive = archiveValue
                         };
+
 
                         if (!string.IsNullOrEmpty(autoInsert.service_id) && autoInsert.service_id != "*")
                         {

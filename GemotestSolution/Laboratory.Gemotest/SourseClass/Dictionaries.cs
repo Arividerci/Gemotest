@@ -174,8 +174,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             biomaterials.Add(biomaterial);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {biomaterials.Count} биоматериалов.");
                     return biomaterials;
                 }
                 else
@@ -199,6 +197,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
     public class DictionaryTransport : BaseDictionary
     {
+
         public static void PrintToConsole(List<DictionaryTransport> output, int count)
         {
             Console.WriteLine($"Dictionary Transport");
@@ -255,7 +254,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                         }
                     }
 
-                    Console.WriteLine($"Успешно обработано {transports.Count}.");
                     return transports;
                 }
                 else
@@ -334,8 +332,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             localizations.Add(localization);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {localizations.Count}.");
                     return localizations;
                 }
                 else
@@ -418,8 +414,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             service_groups.Add(serviceGroup);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {service_groups.Count}.");
                     return service_groups;
                 }
                 else
@@ -508,8 +502,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             service_parameters.Add(service_param);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {service_parameters.Count}.");
                     return service_parameters;
                 }
                 else
@@ -657,8 +649,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             services.Add(service);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {services.Count} услуг.");
                     return services;
                 }
                 else
@@ -728,8 +718,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             tests.Add(test);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {tests.Count} тестов.");
                     return tests;
                 }
                 else
@@ -856,8 +844,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             samples_services.Add(samples_service);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {samples_services.Count}.");
                     return samples_services;
                 }
                 else
@@ -925,8 +911,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             samples.Add(sample);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {samples.Count} проб.");
                     return samples;
                 }
                 else
@@ -1034,7 +1018,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                         }
                     }
 
-                    Console.WriteLine($"Успешно обработано {rules.Count} правил обработки.");
                     return rules;
                 }
                 else
@@ -1116,7 +1099,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             interlocks.Add(interlock);
                         }
                     }
-                    Console.WriteLine($"Успешно обработано {interlocks.Count} интерлоков.");
                     return interlocks;
                 }
                 else
@@ -1213,8 +1195,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                                 compositions.Add(composition);
                             }
                         }
-
-                        Console.WriteLine($"Успешно обработано {compositions.Count} элементов состава маркетинговых комплексов.");
                         return compositions;
                     }
                     else
@@ -1322,8 +1302,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             analogs.Add(analog);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {analogs.Count} групп аналогов.");
                     return analogs;
                 }
                 else
@@ -1404,8 +1382,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             autoInserts.Add(autoInsert);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {autoInserts.Count} автодобавляемых услуг.");
                     return autoInserts;
                 }
                 else
@@ -1512,8 +1488,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                                 compositions.Add(composition);
                             }
                         }
-
-                        Console.WriteLine($"Успешно обработано {compositions.Count} элементов состава маркетинговых комплексов.");
                         return compositions;
                     }
                     else
@@ -1692,8 +1666,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             branches.Add(branch);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {branches.Count} отделений.");
                     return branches;
                 }
                 else
@@ -1775,8 +1747,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             prices.Add(priceItem);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {prices.Count} цен.");
                     return prices;
                 }
                 else

@@ -139,8 +139,8 @@ namespace Laboratory.Gemotest
                                 if (transport != null)
                                 {
                                     biomInfo.ContainerId = transport.id;
-                                    biomInfo.ContainerCode = transport.id;   // кода в справочнике нет – можно использовать id как код
-                                    biomInfo.ContainerName = transport.name; // нормальное отображаемое имя пробирки
+                                    biomInfo.ContainerCode = "";
+;                                    biomInfo.ContainerName = transport.name; 
                                 }
                                 else
                                 {
@@ -150,7 +150,9 @@ namespace Laboratory.Gemotest
                                 }
 
                                 groupForGUI.Biomaterials.Add(biomInfo);
-                                groupForGUI.BiomaterialsSelected.Add(biomInfo);
+                                groupForGUI.SelectOnlyOne = true;
+                                if (details.BioMaterials.Count == 1)
+                                    groupForGUI.BiomaterialsSelected.Add(biomInfo);
                             }
                         }
 
@@ -353,6 +355,8 @@ namespace Laboratory.Gemotest
 
                     details.Products.Add(productInfo);
 
+                    ApplyAutoInsertServices(details, _OrderModel);
+
                     details.AddBiomaterialsFromProducts();
                     for (int i = 0; i < _OrderModel.ProductsInfo.Count; i++)
                     {
@@ -504,5 +508,76 @@ namespace Laboratory.Gemotest
         public void ShowOrderDetail(Order _Order) { }
 
         public bool PrintStikers(Order _Order, List<SampleInfoForGUI> _SelectedSamples) { return false; }
+
+        /// <summary>
+        /// Автоматически добавляет услуги по справочнику service_auto_insert.
+        /// Для каждой услуги в заказе:
+        ///   если есть запись в Dictionaries.ServiceAutoInsert (service_id == ProductId),
+        ///   и auto_service_id ещё нет в заказе,
+        ///   и auto_service_id есть в AllProducts (услуга доступна клинике),
+        ///   то добавляем её в details.Products и _Model.ProductsInfo.
+        /// </summary>
+        private void ApplyAutoInsertServices(GemotestOrderDetail details, OrderModelForGUI model)
+        {
+            if (details == null || details.Products == null)
+                return;
+
+            // нет справочника — нечего делать
+            if (Dictionaries.ServiceAutoInsert == null || Dictionaries.ServiceAutoInsert.Count == 0)
+                return;
+
+            // текущие id услуг, уже добавленных в заказ
+            var existingServiceIds = new HashSet<string>(
+                details.Products
+                       .Where(p => !string.IsNullOrEmpty(p.ProductId))
+                       .Select(p => p.ProductId)
+            );
+
+            // На всякий случай – если AllProducts не инициализирован, auto_insert просто пропустим
+            if (AllProducts == null || AllProducts.Count == 0)
+                return;
+
+            foreach (var rule in Dictionaries.ServiceAutoInsert.Where(x => x.archive == 0))
+            {
+                // В заказе должна быть базовая услуга
+                if (!existingServiceIds.Contains(rule.service_id))
+                    continue;
+
+                // Автодобавляемая уже есть в заказе – пропускаем
+                if (existingServiceIds.Contains(rule.auto_service_id))
+                    continue;
+
+                // Проверяем, что автодобавляемая услуга вообще есть в прайс-листе клиники
+                var autoProduct = AllProducts.FirstOrDefault(p => p.ID == rule.auto_service_id);
+                if (autoProduct == null)
+                    continue; // для этой клиники услуга недоступна – не добавляем
+
+                int newIndex = details.Products.Count;
+
+                // Добавляем в детализацию заказа
+                var autoDetail = new GemotestOrderDetail.GemotestProductDetail
+                {
+                    OrderProductGuid = newIndex.ToString(),
+                    ProductId = autoProduct.ID,
+                    ProductCode = autoProduct.Code,
+                    ProductName = autoProduct.Name
+                };
+                details.Products.Add(autoDetail);
+
+                // Добавляем в модель для GUI
+                var autoGui = new ProductInfoForGUI
+                {
+                    OrderProductGuid = autoDetail.OrderProductGuid,
+                    Id = autoDetail.ProductId,
+                    Code = autoDetail.ProductCode,
+                    Name = autoDetail.ProductName,
+                    ProductGroupGuid = null
+                };
+                model.ProductsInfo.Add(autoGui);
+
+                existingServiceIds.Add(rule.auto_service_id);
+            }
+        }
+
     }
 }

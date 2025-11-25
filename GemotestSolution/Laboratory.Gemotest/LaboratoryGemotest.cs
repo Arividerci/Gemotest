@@ -72,11 +72,15 @@ namespace Laboratory.Gemotest
             }
 
             product = ProductsGemotest
-                .Where(service => !service.is_blocked && !string.IsNullOrEmpty(service.id) && !string.IsNullOrEmpty(service.code) && !string.IsNullOrEmpty(service.name))
-                .Select(service => new ProductGemotest(service, ""))
-                .ToList();
-
-            // ProductGemotest.PrintAllProductsRelatedData(product);
+             .Where(service =>
+                 !service.is_blocked &&
+                 service.service_type != 3 &&
+                 service.service_type != 4 &&
+                 !string.IsNullOrEmpty(service.id) &&
+                 !string.IsNullOrEmpty(service.code) &&
+                 !string.IsNullOrEmpty(service.name))
+             .Select(service => new ProductGemotest(service, ""))
+             .ToList();
 
         }
 
@@ -86,16 +90,30 @@ namespace Laboratory.Gemotest
 
             ProductsCollection pC = new ProductsCollection();
 
-            foreach (var product in ProductsGemotest)
+            foreach (var p in product) // product: List<ProductGemotest>
             {
-                if (String.IsNullOrEmpty(product.id) || String.IsNullOrEmpty(product.code) || String.IsNullOrEmpty(product.name) || product.is_blocked)
+                // Отсеиваем всё «заблокированное»
+                if (p.IsBlocked)
                     continue;
-                pC.Add(new Product { ID = product.id, Code = product.code, Name = product.name });
-        
+
+                // Явно режем ненужные типы услуг
+                if (p.ServiceType == 3 || p.ServiceType == 4)
+                    continue;
+
+                if (string.IsNullOrEmpty(p.ID) || string.IsNullOrEmpty(p.Code) || string.IsNullOrEmpty(p.Name))
+                    continue;
+
+                pC.Add(new Product
+                {
+                    ID = p.ID,
+                    Code = p.Code,
+                    Name = p.Name
+                });
             }
-            //Gemotest.PrintDictionaries();
+
             return pC;
         }
+
 
         public Product ChooseProduct(Product _SourceProduct = null) {
 

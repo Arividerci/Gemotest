@@ -31,7 +31,7 @@ namespace Laboratory.Gemotest.Options
         private static readonly string[] DictionaryFiles = {
             "Biomaterials", "Transport", "Localization", "Service_group", "Service_parameters",
             "Directory", "Tests", "Samples_services", "Samples", "Processing_rules",
-            "Services_all_interlocks", "Marketing_complex_composition", "Services_group_analogs",
+            /*"Services_all_interlocks",*/ "Marketing_complex_composition", "Services_group_analogs",
             "Service_auto_insert", "Services_supplementals"
         };
         private string ListFilePath => Path.Combine(filePath, "dictionaries_list.txt");
@@ -117,7 +117,7 @@ namespace Laboratory.Gemotest.Options
                 get_samples_services();
                 get_samples();
                 get_processing_rules();
-                get_services_all_interlocks();
+                // get_services_all_interlocks();
                 get_marketing_complex_composition();
                 get_services_group_analogs();
                 get_service_auto_insert();

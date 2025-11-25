@@ -50,7 +50,6 @@ namespace Laboratory.Gemotest
 
             if (Dictionaries.Directory == null || Dictionaries.Directory.Count == 0)
             {
-                // Распаковка всех справочников, если Directory пустой
                 bool unpackSuccess = Dictionaries.Unpack(Gemotest.filePath);
                 if (!unpackSuccess)
                 {
@@ -77,7 +76,7 @@ namespace Laboratory.Gemotest
                 .Select(service => new ProductGemotest(service, ""))
                 .ToList();
 
-            ProductGemotest.PrintAllProductsRelatedData(product);
+            // ProductGemotest.PrintAllProductsRelatedData(product);
 
         }
 
@@ -105,7 +104,31 @@ namespace Laboratory.Gemotest
 
         public BaseOrderDetail CreateOrderDetail() { return new GemotestOrderDetail(); }
 
-        public void FillDefaultOrderDetail(BaseOrderDetail _OrderDetail, OrderItemsCollection _Items) { }
+        public void FillDefaultOrderDetail(BaseOrderDetail _OrderDetail, OrderItemsCollection _Items)
+        {
+            var details = (GemotestOrderDetail)_OrderDetail;
+
+            details.Products.Clear();
+
+            int index = 0;
+            foreach (var item in _Items)
+            {
+                var prod = item.Product; 
+
+                details.Products.Add(new GemotestProductDetail
+                {
+                    OrderProductGuid = index.ToString(),
+                    ProductId = prod.ID,      
+                    ProductCode = prod.Code,
+                    ProductName = prod.Name
+                });
+
+                index++;
+            }
+
+            details.AddBiomaterialsFromProducts();
+        }
+
 
         public bool CreateOrder(Order _Order) {
 

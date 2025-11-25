@@ -78,8 +78,9 @@ namespace Laboratory.Gemotest.GemotestRequests
                 ProcessingRules = DictionaryProcessingRules.Parse(prContent);
 
                 // Services_all_interlocks
-                string saiContent = File.ReadAllText(Path.Combine(filePath, "Services_all_interlocks.xml"));
-                ServicesAllInterlocks = DictionaryServicesAllInterlocks.Parse(saiContent);
+                // Пока без них, слишком затратно по времени
+                /*string saiContent = File.ReadAllText(Path.Combine(filePath, "Services_all_interlocks.xml"));
+                ServicesAllInterlocks = DictionaryServicesAllInterlocks.Parse(saiContent);*/
 
 
                 // Marketing_complex_composition (используем статический парсер)

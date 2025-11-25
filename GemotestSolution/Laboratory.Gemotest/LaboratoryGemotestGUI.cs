@@ -8,6 +8,7 @@ using System.Text;
 using StatisticsCollectionSystemClient;
 using System.Windows.Forms;
 using static Laboratory.Gemotest.SourseClass.GemotestOrderDetail;
+using Laboratory.Gemotest.GemotestRequests;
 
 namespace Laboratory.Gemotest
 {
@@ -97,19 +98,62 @@ namespace Laboratory.Gemotest
 
                         BiomaterialGroupForGUI groupForGUI = new BiomaterialGroupForGUI();
 
+                        Console.WriteLine(details.BioMaterials.Count);
                         foreach (var biomaterialInfo in details.BioMaterials)
                         {
-                            if (biomaterialInfo.Chosen.Contains(details.Products.IndexOf(product)) || biomaterialInfo.Mandatory.Contains(details.Products.IndexOf(product)))
+
+                            if (biomaterialInfo.Chosen.Contains(details.Products.IndexOf(product)) ||
+                                biomaterialInfo.Mandatory.Contains(details.Products.IndexOf(product)))
                             {
                                 BiomaterialInfoForGUI biomInfo = new BiomaterialInfoForGUI();
                                 biomInfo.BiomaterialId = biomaterialInfo.Id;
                                 biomInfo.BiomaterialCode = biomaterialInfo.Code;
                                 biomInfo.BiomaterialName = biomaterialInfo.Name;
-                                biomInfo.ContainerName = "";
+
+                                Console.WriteLine($" - {biomInfo.BiomaterialName}");
+
+                                var param = Dictionaries.ServiceParameters
+                                    .FirstOrDefault(p =>
+                                        p.service_id == product.ProductId &&
+                                        p.biomaterial_id == biomaterialInfo.Id);
+
+                                DictionaryTransport transport = null;
+
+                                if (param != null && !string.IsNullOrEmpty(param.transport_id))
+                                {
+                                    transport = Dictionaries.Transport
+                                        .FirstOrDefault(t => t.id == param.transport_id);
+                                }
+                                if (transport == null)
+                                {
+                                    var service = Dictionaries.Directory
+                                        .FirstOrDefault(s => s.id == product.ProductId);
+
+                                    if (service != null && !string.IsNullOrEmpty(service.transport_id))
+                                    {
+                                        transport = Dictionaries.Transport
+                                            .FirstOrDefault(t => t.id == service.transport_id);
+                                    }
+                                }
+
+                                if (transport != null)
+                                {
+                                    biomInfo.ContainerId = transport.id;
+                                    biomInfo.ContainerCode = transport.id;   // кода в справочнике нет – можно использовать id как код
+                                    biomInfo.ContainerName = transport.name; // нормальное отображаемое имя пробирки
+                                }
+                                else
+                                {
+                                    biomInfo.ContainerId = "";
+                                    biomInfo.ContainerCode = "";
+                                    biomInfo.ContainerName = "";
+                                }
+
                                 groupForGUI.Biomaterials.Add(biomInfo);
                                 groupForGUI.BiomaterialsSelected.Add(biomInfo);
                             }
                         }
+
                         productNew.BiomaterialGroups.Add(groupForGUI);
 
                         _Model.ProductsInfo.Add(productNew);

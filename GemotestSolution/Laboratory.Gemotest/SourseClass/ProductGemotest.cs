@@ -68,7 +68,7 @@ namespace Laboratory.Gemotest.SourseClass
             }
 
             BioMaterials = BioMaterials.GroupBy(b => b.id).Select(g => g.First()).ToList();
-            Console.WriteLine($"Загружено {BioMaterials.Count} биоматериалов для {service.id} (ServiceType {ServiceType}).");
+            //Console.WriteLine($"Загружено {BioMaterials.Count} биоматериалов для {service.id} (ServiceType {ServiceType}).");
         }
 
         private void LoadBiomaterialsFromServiceParameters(DictionaryService service)

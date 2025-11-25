@@ -113,6 +113,91 @@ namespace Laboratory.Gemotest.SourseClass
             }
         }
 
+        private List<DictionaryBiomaterials> ResolveBiomaterialsForService(DictionaryService service)
+        {
+            var result = new List<DictionaryBiomaterials>();
+
+            // 1. Прямой biomaterial_id из Directory, если он есть и не "Drugoe"
+            if (!string.IsNullOrEmpty(service.biomaterial_id) &&
+                service.biomaterial_id != "Drugoe")
+            {
+                var biom = Dictionaries.Biomaterials
+                    .FirstOrDefault(b => b.id == service.biomaterial_id);
+                if (biom != null)
+                    result.Add(biom);
+            }
+
+            // 2. service_type 0 → Service_parameters
+            if (service.service_type == 0 && Dictionaries.ServiceParameters != null)
+            {
+                var paramsList = Dictionaries.ServiceParameters
+                    .Where(p => p.service_id == service.id)
+                    .ToList();
+
+                if (paramsList.Any())
+                {
+                    var ids = paramsList
+                        .Select(p => p.biomaterial_id)
+                        .Where(id => !string.IsNullOrEmpty(id))
+                        .Distinct();
+
+                    foreach (var id in ids)
+                    {
+                        var biom = Dictionaries.Biomaterials.FirstOrDefault(b => b.id == id);
+                        if (biom != null && !result.Any(r => r.id == biom.id))
+                            result.Add(biom);
+                    }
+                }
+            }
+
+            // 3. service_type 1/2 → Marketing_complex_composition
+            if ((service.service_type == 1 || service.service_type == 2) &&
+                Dictionaries.MarketingComplexComposition != null)
+            {
+                Func<DictionaryMarketingComplex, bool> filter =
+                    service.service_type == 2
+                        ? new Func<DictionaryMarketingComplex, bool>(m => m.complex_id == service.id)
+                        : new Func<DictionaryMarketingComplex, bool>(m => m.service_id == service.id);
+
+                var complexItems = Dictionaries.MarketingComplexComposition
+                    .Where(filter)
+                    .ToList();
+
+                if (complexItems.Any())
+                {
+                    var ids = complexItems
+                        .Select(m => m.biomaterial_id)
+                        .Where(id => !string.IsNullOrEmpty(id))
+                        .Distinct();
+
+                    foreach (var id in ids)
+                    {
+                        var biom = Dictionaries.Biomaterials.FirstOrDefault(b => b.id == id);
+                        if (biom != null && !result.Any(r => r.id == biom.id))
+                            result.Add(biom);
+                    }
+                }
+            }
+
+            // 4. Особый случай: biomaterial_id == "Drugoe"
+            if (service.biomaterial_id == "Drugoe" &&
+                !string.IsNullOrEmpty(service.other_biomaterial))
+            {
+                if (!result.Any(b => b.id == "Drugoe"))
+                {
+                    result.Add(new DictionaryBiomaterials
+                    {
+                        id = "Drugoe",
+                        name = service.other_biomaterial,
+                        archive = 0
+                    });
+                }
+            }
+
+            return result;
+        }
+
+
         /// <summary>
         /// Добавляет биоматериалы, id которых совпадает с biomaterial_id в выбранных продуктах Products.
         /// Связывает с AllProducts (Dictionaries.Directory) по ProductId, затем находит DictionaryBiomaterials по biomaterial_id.
@@ -121,46 +206,96 @@ namespace Laboratory.Gemotest.SourseClass
         /// </summary>
         public void AddBiomaterialsFromProducts()
         {
-            if (Products == null || !Products.Any() || Dictionaries.Directory == null || Dictionaries.Biomaterials == null)
+            if (Products == null || Products.Count == 0)
                 return;
 
+            if (Dictionaries.Directory == null || Dictionaries.Biomaterials == null)
+                return;
+
+            // Если были старые данные – очищаем
+            if (BioMaterials == null)
+                BioMaterials = new List<GemotestBioMaterial>();
+            else
+                BioMaterials.Clear();
+
+            // 1. Собираем связи «продукт -> биоматериалы»
             for (int productIndex = 0; productIndex < Products.Count; productIndex++)
             {
                 var product = Products[productIndex];
+
                 var service = Dictionaries.Directory.FirstOrDefault(s => s.id == product.ProductId);
-                if (service == null || string.IsNullOrEmpty(service.biomaterial_id))
-                    continue; 
+                if (service == null)
+                    continue;
 
-                var biomaterialItem = Dictionaries.Biomaterials.FirstOrDefault(b => b.id == service.biomaterial_id);
-                if (biomaterialItem == null)
-                    continue; 
+                var biomaterialsForService = ResolveBiomaterialsForService(service);
+                if (!biomaterialsForService.Any())
+                    continue;
 
-                // Ищем существующий GemotestBioMaterial по Id
-                var existingBioMat = BioMaterials.FirstOrDefault(bm => bm.Id == biomaterialItem.id);
-                if (existingBioMat != null)
+                // Комплексы (service_type == 2) – все биоматериалы обязательные
+                bool allMandatory = service.service_type == 2;
+
+                foreach (var biom in biomaterialsForService)
                 {
-                    // Добавляем индекс продукта в Mandatory (обязательный)
-                    if (!existingBioMat.Mandatory.Contains(productIndex))
-                        existingBioMat.Mandatory.Add(productIndex);
-                }
-                else
-                {
-                    // Создаём новый
-                    var newBioMat = new GemotestBioMaterial
+                    if (biom == null || string.IsNullOrEmpty(biom.id))
+                        continue;
+
+                    var existing = BioMaterials.FirstOrDefault(b => b.Id == biom.id);
+                    if (existing == null)
                     {
-                        Id = biomaterialItem.id,
-                        Code = biomaterialItem.id, // Если нет отдельного code, используем id
-                        Name = biomaterialItem.name,
-                        Mandatory = new List<int> { productIndex } // Обязательный для этого продукта
-                    };
-                    BioMaterials.Add(newBioMat);
+                        existing = new GemotestBioMaterial
+                        {
+                            Id = biom.id,
+                            Code = biom.id,
+                            Name = biom.name
+                        };
+                        BioMaterials.Add(existing);
+                    }
+
+                    if (allMandatory)
+                    {
+                        if (!existing.Mandatory.Contains(productIndex))
+                            existing.Mandatory.Add(productIndex);
+                        if (!existing.Chosen.Contains(productIndex))
+                            existing.Chosen.Add(productIndex);
+                    }
+                    else
+                    {
+                        // Для типов 0 и 1: варианты, из которых надо выбрать один
+                        if (!existing.Another.Contains(productIndex) &&
+                            !existing.Chosen.Contains(productIndex) &&
+                            !existing.Mandatory.Contains(productIndex))
+                        {
+                            existing.Another.Add(productIndex);
+                        }
+                    }
                 }
             }
 
-            // Удаляем дубликаты и сортируем BioMaterials по Id (опционально)
-            BioMaterials = BioMaterials.GroupBy(bm => bm.Id)
-                                       .Select(g => g.First())
-                                       .ToList();
+            // 2. Для продуктов, где есть выбор (service_type 0/1), назначаем дефолтный биоматериал:
+            for (int i = 0; i < Products.Count; i++)
+            {
+                // Если уже есть обязательный или выбранный – не трогаем
+                bool alreadyChosen = BioMaterials.Any(b =>
+                    b.Chosen.Contains(i) || b.Mandatory.Contains(i));
+
+                if (alreadyChosen)
+                    continue;
+
+                // Берём первый доступный вариант из Another
+                var candidate = BioMaterials.FirstOrDefault(b => b.Another.Contains(i));
+                if (candidate != null)
+                {
+                    candidate.Another.Remove(i);
+                    candidate.Chosen.Add(i);
+                }
+            }
+
+            // 3. Подчистим мусор (если вдруг есть биоматериалы, не привязанные ни к одному продукту)
+            BioMaterials = BioMaterials
+                .Where(b => b.Chosen.Count > 0 || b.Another.Count > 0 || b.Mandatory.Count > 0)
+                .ToList();
+
+             Console.WriteLine($"[AddBiomaterialsFromProducts] BioMaterials.Count = {BioMaterials.Count}");
         }
 
         public void DeleteObsoleteDetails()
@@ -278,5 +413,4 @@ namespace Laboratory.Gemotest.SourseClass
                 Details.Remove(item);
         }
     }
-    public enum Priority { обычная = 10, срочная = 20 }
 }

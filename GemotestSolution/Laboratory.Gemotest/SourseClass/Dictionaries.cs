@@ -77,10 +77,10 @@ namespace Laboratory.Gemotest.GemotestRequests
                 string prContent = File.ReadAllText(Path.Combine(filePath, "Processing_rules.xml"));
                 ProcessingRules = DictionaryProcessingRules.Parse(prContent);
 
-                /*// Services_all_interlocks
+                // Services_all_interlocks
                 string saiContent = File.ReadAllText(Path.Combine(filePath, "Services_all_interlocks.xml"));
                 ServicesAllInterlocks = DictionaryServicesAllInterlocks.Parse(saiContent);
-                */
+
 
                 // Marketing_complex_composition (используем статический парсер)
                 string mccContent = File.ReadAllText(Path.Combine(filePath, "Marketing_complex_composition.xml"));
@@ -1055,21 +1055,19 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника правил взаимоблокирующихся услуг (get_services_all_interlocks)
+    // Класс для справочника блокирующихся сервисов (get_services_all_interlocks)
     public class DictionaryServicesAllInterlocks
     {
-        public string service_id { get; set; } = string.Empty;
-        public string interlock_service_id { get; set; } = string.Empty;
-        public int type { get; set; }
-        public int archive { get; set; }
+        public string serv_id { get; set; } = string.Empty;
+        public string blocked_serv { get; set; } = string.Empty;
 
         public static void PrintToConsole(List<DictionaryServicesAllInterlocks> output, int count)
         {
-            Console.WriteLine($"Dictionary Services_all_interlocks");
+            Console.WriteLine($"Dictionary Services All Interlocks");
             for (int i = 0; i < Math.Min(count, output.Count); i++)
             {
                 var interlock = output[i];
-                Console.WriteLine($"service_id: {interlock.service_id}, interlock_service_id: {interlock.interlock_service_id}, type: {interlock.type}, archive: {interlock.archive}");
+                Console.WriteLine($"serv_id: {interlock.serv_id}, blocked_serv: {interlock.blocked_serv}");
             }
             Console.WriteLine("\n");
         }
@@ -1081,36 +1079,43 @@ namespace Laboratory.Gemotest.GemotestRequests
             {
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(xmlContent);
-
-                var interlockNodes = doc.SelectNodes("//*[local-name()='interlocks']/*[local-name()='item'] | //*[local-name()='item']");
-
+                var interlockNodes = doc.SelectNodes("//*[local-name()='elements']/*[local-name()='item']");
                 if (interlockNodes != null && interlockNodes.Count > 0)
                 {
-                    foreach (XmlNode node in interlockNodes)
+                    foreach (XmlNode mapNode in interlockNodes)
                     {
-                        var serviceIdNode = node.SelectSingleNode("*[local-name()='service_id']");
-                        var interlockServiceIdNode = node.SelectSingleNode("*[local-name()='interlock_service_id']");
-                        var typeNode = node.SelectSingleNode("*[local-name()='type']");
-                        var archiveNode = node.SelectSingleNode("*[local-name()='archive']");
+                        var keyValuePairs = mapNode.SelectNodes("./*[local-name()='item']");
+                        string serv_id = string.Empty;
+                        string blocked_serv = string.Empty;
 
-                        int archiveValue = ParseArchive(archiveNode);
-                        int typeValue = ParseInt(typeNode);
-
-                        var interlock = new DictionaryServicesAllInterlocks
+                        foreach (XmlNode pair in keyValuePairs)
                         {
-                            service_id = serviceIdNode?.InnerText ?? string.Empty,
-                            interlock_service_id = interlockServiceIdNode?.InnerText ?? string.Empty,
-                            type = typeValue,
-                            archive = archiveValue
-                        };
+                            var keyNode = pair.SelectSingleNode("*[local-name()='key']");
+                            var valueNode = pair.SelectSingleNode("*[local-name()='value']");
+                            var key = keyNode?.InnerText ?? string.Empty;
+                            var value = valueNode?.InnerText ?? string.Empty;
 
-                        if (!string.IsNullOrEmpty(interlock.service_id) && interlock.service_id != "*")
+                            if (key == "serv_id")
+                            {
+                                serv_id = value;
+                            }
+                            else if (key == "blocked_serv")
+                            {
+                                blocked_serv = value;
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(serv_id) && serv_id != "*")
                         {
+                            var interlock = new DictionaryServicesAllInterlocks
+                            {
+                                serv_id = serv_id,
+                                blocked_serv = blocked_serv
+                            };
                             interlocks.Add(interlock);
                         }
                     }
-
-                    Console.WriteLine($"Успешно обработано {interlocks.Count} блокировок.");
+                    Console.WriteLine($"Успешно обработано {interlocks.Count} интерлоков.");
                     return interlocks;
                 }
                 else
@@ -1129,15 +1134,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                 Console.WriteLine($"Общая ошибка: {ex.Message}");
                 return new List<DictionaryServicesAllInterlocks>();
             }
-        }
-
-        private static int ParseArchive(XmlNode archiveNode) => ParseInt(archiveNode);
-        private static int ParseInt(XmlNode node)
-        {
-            if (node == null) return 0;
-            var nilAttribute = node.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
-            if (nilAttribute != null && nilAttribute.Value == "true") return 0;
-            return int.TryParse(node.InnerText, out int value) ? value : 0;
         }
     }
 

@@ -11,6 +11,8 @@ using iTextSharp.text.pdf.security;
 using System.Linq;
 using SiMed.Laboratory;
 using System.Diagnostics.Eventing.Reader;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using System.Drawing;
 
 namespace Laboratory.Gemotest.Options
 {
@@ -22,13 +24,14 @@ namespace Laboratory.Gemotest.Options
         private string _contractor_code;
         private string _salt;
         private string _url = "https://api.gemotest.ru/odoctor/odoctor/index/ws/1";
+        private int chunk;
+        private int size;
         public string filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\10003\";
-
+        
         private static readonly string[] DictionaryFiles = {
             "Biomaterials", "Transport", "Localization", "Service_group", "Service_parameters",
             "Directory", "Tests", "Samples_services", "Samples", "Processing_rules",
-            /*"Services_all_interlocks",*/
-            "Marketing_complex_composition", "Services_group_analogs",
+            "Services_all_interlocks", "Marketing_complex_composition", "Services_group_analogs",
             "Service_auto_insert", "Services_supplementals"
         };
         private string ListFilePath => Path.Combine(filePath, "dictionaries_list.txt");
@@ -114,7 +117,7 @@ namespace Laboratory.Gemotest.Options
                 get_samples_services();
                 get_samples();
                 get_processing_rules();
-                //get_services_all_interlocks();
+                get_services_all_interlocks();
                 get_marketing_complex_composition();
                 get_services_group_analogs();
                 get_service_auto_insert();
@@ -264,13 +267,151 @@ namespace Laboratory.Gemotest.Options
             Console.WriteLine("Справочник правил обработки загружен (Ok 10)");
         }
 
-        public void get_services_all_interlocks()
+        /*public void get_services_all_interlocks()
         {
             string response = RequestToGemotest("get_services_all_interlocks");
             CreateNewDictionaries(response, "Services_all_interlocks");
             Console.WriteLine("Справочник правил взаимоблокирующихся услуг загружен (Ok 11)");
-        }
+        }*/
+        public void get_services_all_interlocks()
+        {
+            const int chunkSize = 20001;
+            int currentChunk = 1;
+            List<string> allItemXmls = new List<string>();
+            string firstResponse = null;
+            int totalChunks = 0;
 
+            try
+            {
+                do
+                {
+                    // Устанавливаем поля перед запросом
+                    this.chunk = currentChunk;
+                    this.size = chunkSize;
+
+                    string response = RequestToGemotest("get_services_all_interlocks");
+
+                    XmlDocument doc = new XmlDocument();
+                    doc.LoadXml(response);
+
+                    // Проверка статуса
+                    XmlNode statusNode = doc.SelectSingleNode("//status");
+                    if (statusNode == null || statusNode.InnerText != "accepted")
+                    {
+                        throw new Exception($"Неверный статус ответа: {statusNode?.InnerText ?? "null"}");
+                    }
+
+                    // Проверка ошибки
+                    XmlNode errorCodeNode = doc.SelectSingleNode("//error_code");
+                    if (errorCodeNode != null && int.Parse(errorCodeNode.InnerText) != 0)
+                    {
+                        XmlNode errorDescNode = doc.SelectSingleNode("//error_description");
+                        throw new Exception($"Ошибка в ответе (код {errorCodeNode.InnerText}): {errorDescNode?.InnerText ?? "нет описания"}");
+                    }
+
+                    // Получение информации о чанках
+                    XmlNode chunkNode = doc.SelectSingleNode("//chunk");
+                    if (chunkNode == null)
+                    {
+                        throw new Exception("Отсутствует информация о чанке в ответе");
+                    }
+                    XmlNode currentNode = chunkNode.SelectSingleNode("current");
+                    XmlNode countNode = chunkNode.SelectSingleNode("count");
+                    if (currentNode == null || countNode == null)
+                    {
+                        throw new Exception("Отсутствуют current или count в чанке");
+                    }
+
+                    int thisCurrent = int.Parse(currentNode.InnerText);
+                    totalChunks = int.Parse(countNode.InnerText);
+
+                    if (thisCurrent != currentChunk)
+                    {
+                        throw new Exception($"Несоответствие текущего чанка: ожидался {currentChunk}, получен {thisCurrent}");
+                    }
+
+                    // Сбор элементов (item)
+                    XmlNode elementsNode = doc.SelectSingleNode("//elements");
+                    if (elementsNode != null)
+                    {
+                        XmlNodeList items = elementsNode.SelectNodes("item");
+                        foreach (XmlNode item in items)
+                        {
+                            allItemXmls.Add(item.OuterXml);
+                        }
+                    }
+
+                    if (currentChunk == 1)
+                    {
+                        firstResponse = response;
+                    }
+                    Console.WriteLine($"Текущий чанк: {currentChunk} из {totalChunks}");
+                    currentChunk++;
+                } while (currentChunk <= totalChunks);
+
+                if (string.IsNullOrEmpty(firstResponse))
+                {
+                    throw new Exception("Не удалось получить первый ответ");
+                }
+
+                // Построение полного ответа
+                XmlDocument fullDoc = new XmlDocument();
+                fullDoc.LoadXml(firstResponse);
+
+                XmlNode fullElementsNode = fullDoc.SelectSingleNode("//elements");
+                if (fullElementsNode == null)
+                {
+                    throw new Exception("Отсутствует узел elements в первом ответе");
+                }
+
+                // Обновление arrayType
+                XmlAttribute arrayTypeAttr = fullElementsNode.Attributes["SOAP-ENC:arrayType"];
+                if (arrayTypeAttr != null)
+                {
+                    arrayTypeAttr.Value = $"ns2:Map[{allItemXmls.Count}]";
+                }
+
+                // Очистка старых item
+                fullElementsNode.RemoveAll();
+
+                // Добавление всех item
+                foreach (string itemXml in allItemXmls)
+                {
+                    XmlDocument tempDoc = new XmlDocument();
+                    tempDoc.LoadXml($"<root>{itemXml}</root>"); // Обертка для LoadXml
+                    XmlNode itemNode = tempDoc.DocumentElement?.FirstChild;
+                    if (itemNode != null)
+                    {
+                        XmlNode importedItem = fullDoc.ImportNode(itemNode, true);
+                        fullElementsNode.AppendChild(importedItem);
+                    }
+                }
+
+                // Обновление chunk: current=1, count=1
+                XmlNode fullChunkNode = fullDoc.SelectSingleNode("//chunk");
+                if (fullChunkNode != null)
+                {
+                    XmlNode fullCurrentNode = fullChunkNode.SelectSingleNode("current");
+                    XmlNode fullCountNode = fullChunkNode.SelectSingleNode("count");
+                    if (fullCurrentNode != null) fullCurrentNode.InnerText = "1";
+                    if (fullCountNode != null) fullCountNode.InnerText = "1";
+                }
+
+                string fullResponse = fullDoc.OuterXml;
+                CreateNewDictionaries(fullResponse, "Services_all_interlocks");
+                Console.WriteLine("Справочник правил взаимоблокирующихся услуг загружен (Ok 11)");
+
+                this.chunk = 0;
+                this.size = 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при загрузке справочника Services_all_interlocks: {ex.Message}");
+                this.chunk = 0;
+                this.size = 0;
+                throw; 
+            }
+        }
         public void get_marketing_complex_composition()
         {
             string response = RequestToGemotest("get_marketing_complex_composition");
@@ -380,7 +521,7 @@ namespace Laboratory.Gemotest.Options
                     currentDictionaries.Add(fileName);
                 }
             }
-            currentDictionaries.Sort(); 
+            currentDictionaries.Sort();
 
             File.WriteAllLines(ListFilePath, currentDictionaries);
         }
@@ -409,6 +550,12 @@ namespace Laboratory.Gemotest.Options
             {
                 soapRequest = CreateSoapRequest(methodName, _contractor_code, hash);
             }
+            else if (methodName == "get_services_all_interlocks")
+            {
+                int c = chunk > 0 ? chunk : 1;
+                int s = size > 0 ? size : 10001;
+                soapRequest = CreateSoapRequest(methodName, c, s);
+            }
             else
             {
                 soapRequest = CreateSoapRequest(methodName);
@@ -420,11 +567,6 @@ namespace Laboratory.Gemotest.Options
             request.Headers.Add("SOAPAction", $"\"urn:OdoctorControllerwsdl#{methodName}\"");
 
             string auth = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_login}:{_password}"));
-        
-            Console.WriteLine($"Login: '{_login}'");
-            Console.WriteLine($"Password: '{_password}'");
-            Console.WriteLine($"Combined: '{_login}:{_password}'");
-            Console.WriteLine(auth);
 
             request.Headers["Authorization"] = "Basic " + auth;
 
@@ -463,6 +605,26 @@ namespace Laboratory.Gemotest.Options
                 }
                 throw new Exception($"HTTP {errorResponse?.StatusCode}: {errorBody}.", ex);
             }
+        }
+
+
+        private string CreateSoapRequest(string methodName, int Chunk, int Size)
+        {
+            return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<soapenv:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" 
+xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" 
+xmlns:urn=""urn:OdoctorControllerwsdl""> 
+   <soapenv:Header/> 
+   <soapenv:Body> 
+      <urn:{methodName} soapenv:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/""> 
+         <params xsi:type=""urn:request_{methodName}""> 
+            <currentChunk xsi:type=""xsd:integer"">{Chunk}</currentChunk> 
+            <chunkSize xsi:type=""xsd:integer"">{Size}</chunkSize> 
+           
+         </params> 
+      </urn:{methodName}> 
+   </soapenv:Body> 
+</soapenv:Envelope>";
         }
 
         private string CreateSoapRequest(string methodName, string contractor, int directory, string hash)

@@ -55,3 +55,32 @@ C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Gemotest\
 C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Gemotest\obj\Debug\Gemotest.exe
 C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Gemotest\obj\Debug\Gemotest.pdb
 C:\Users\Night\OneDrive\Desktop\ВКР — копия\GemotestSolution\Gemotest\bin\Debug\Laboratory.Gemotest.dll.config
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Gemotest.exe.config
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Gemotest.exe
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\BarcodeScannerMonitor.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ClinicCommon.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ClinicLaboratoryCommon.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ClinicLogging.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ClinicScannerManager.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ClinicStatisticsCollectionSystemTitles.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ContainerMarkerCommon.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\HL7Converter.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\itextsharp.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Laboratory.Gemotest.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\PrintCommon.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\StatisticsCollectionSystemClient.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\WordReport.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\zxing.dll
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\bin\Debug\Laboratory.Gemotest.dll.config
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.csproj.AssemblyReference.cache
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.MainForm.resources
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.Properties.Resources.resources
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.csproj.GenerateResource.cache
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.csproj.CoreCompileInputs.cache
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.csproj.Up2Date
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.exe
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.pdb

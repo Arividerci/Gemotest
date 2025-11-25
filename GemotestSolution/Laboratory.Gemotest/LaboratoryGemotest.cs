@@ -94,7 +94,7 @@ namespace Laboratory.Gemotest
                 pC.Add(new Product { ID = product.id, Code = product.code, Name = product.name });
         
             }
-            Gemotest.PrintS();
+            //Gemotest.PrintDictionaries();
             return pC;
         }
 

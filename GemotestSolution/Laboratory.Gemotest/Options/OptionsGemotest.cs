@@ -15,7 +15,7 @@ namespace Laboratory.Gemotest
     {
         public string UrlAdress { get; set; } = "https://api.gemotest.ru/odoctor/odoctor/index/ws/1";
         public string Login { get; set; } = "10003-gem";    
-        public string Password { get; set; } = ";S1D6$kcD";
+        public string Password { get; set; } = "F(SP{2JPg";
         public string Contractor { get; set; } = "10003";
         public string Contractor_Code { get; set; } = "10003";
         public string Salt { get; set; } = "b4f6d7d2fe94123c03c86412a0b649494017463f";

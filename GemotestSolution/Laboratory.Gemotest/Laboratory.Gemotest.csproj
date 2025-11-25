@@ -96,7 +96,6 @@
     <Compile Include="LaboratoryGemotest.cs" />
     <Compile Include="LaboratoryGemotestGUI.cs" />
     <Compile Include="Options\GemotestService.cs" />
-    <Compile Include="Options\GemotestWSDL.cs" />
     <Compile Include="Options\LocalOptionsForm.cs">
       <SubType>Form</SubType>
     </Compile>

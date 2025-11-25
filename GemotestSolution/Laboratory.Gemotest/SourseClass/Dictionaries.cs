@@ -1380,7 +1380,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                             archive = archiveValue
                         };
 
-
                         if (!string.IsNullOrEmpty(autoInsert.service_id) && autoInsert.service_id != "*")
                         {
                             autoInserts.Add(autoInsert);

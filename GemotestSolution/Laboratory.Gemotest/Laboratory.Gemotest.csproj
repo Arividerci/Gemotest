@@ -91,7 +91,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class_Test.cs" />
     <Compile Include="GemotestOrderDetails.cs" />
     <Compile Include="SourseClass\Dictionaries.cs" />
     <Compile Include="LaboratoryGemotest.cs" />

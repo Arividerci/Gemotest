@@ -17,7 +17,6 @@ namespace Laboratory.Gemotest.SourseClass
         public float Price { get; set; }
         public int IncreasePeriod { get; set; }
 
-        
         public List<DictionaryLocalization> Localization { get; set; } = new List<DictionaryLocalization>(); 
         public List<DictionaryBiomaterials> BioMaterials { get; set; } = new List<DictionaryBiomaterials>(); 
         public List<DictionaryTransport> Transports { get; set; } = new List<DictionaryTransport>(); 

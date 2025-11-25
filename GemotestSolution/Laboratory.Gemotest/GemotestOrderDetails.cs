@@ -212,7 +212,6 @@ namespace Laboratory.Gemotest.SourseClass
             if (Dictionaries.Directory == null || Dictionaries.Biomaterials == null)
                 return;
 
-            // Если были старые данные – очищаем
             if (BioMaterials == null)
                 BioMaterials = new List<GemotestBioMaterial>();
             else

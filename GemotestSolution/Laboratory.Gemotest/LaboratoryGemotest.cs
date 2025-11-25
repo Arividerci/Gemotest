@@ -81,7 +81,6 @@ namespace Laboratory.Gemotest
                  !string.IsNullOrEmpty(service.name))
              .Select(service => new ProductGemotest(service, ""))
              .ToList();
-
         }
 
         public ProductsCollection GetProducts()

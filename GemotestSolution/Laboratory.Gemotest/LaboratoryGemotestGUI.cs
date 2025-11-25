@@ -90,7 +90,8 @@ namespace Laboratory.Gemotest
                     foreach (var product in details.Products)
                     {
                         ProductInfoForGUI productNew = new ProductInfoForGUI();
-                        productNew.OrderProductGuid = Guid.NewGuid().ToString();
+                        productNew.OrderProductGuid = details.Products.IndexOf(product).ToString();
+
                         productNew.Id = product.ProductId;
                         productNew.Code = product.ProductCode;
                         productNew.Name = product.ProductName;
@@ -98,7 +99,6 @@ namespace Laboratory.Gemotest
 
                         BiomaterialGroupForGUI groupForGUI = new BiomaterialGroupForGUI();
 
-                        Console.WriteLine(details.BioMaterials.Count);
                         foreach (var biomaterialInfo in details.BioMaterials)
                         {
 
@@ -202,7 +202,6 @@ namespace Laboratory.Gemotest
                     });
                 }
 
-                // сохранение информации о выбранных биоматериалах
                 foreach (var biom in details.BioMaterials)
                 {
                     // выбранные и обязательные биоматериалы
@@ -354,13 +353,74 @@ namespace Laboratory.Gemotest
 
                     details.Products.Add(productInfo);
 
-                   /* details.FillBioMaterials(infoBank, details.Products);
+                    details.AddBiomaterialsFromProducts();
+                    for (int i = 0; i < _OrderModel.ProductsInfo.Count; i++)
+                    {
+                        var guiProduct = _OrderModel.ProductsInfo[i];
+                        guiProduct.BiomaterialGroups.Clear();
 
-                    List<BiomaterialGroupForGUI> biomaterialGroups;
-                    if (!GetBiomaterialsGroupsForProductInfo(_Order, details.Products.Count - 1, out biomaterialGroups))
-                        return false;
+                        var groupForGUI = new BiomaterialGroupForGUI();
+                        var productDetail = details.Products[i];
 
-                    productNew.BiomaterialGroups = biomaterialGroups;*/
+                        foreach (var biomaterialInfo in details.BioMaterials)
+                        {
+                            if (biomaterialInfo.Chosen.Contains(i) ||
+                                biomaterialInfo.Mandatory.Contains(i))
+                            {
+                                var biomInfo = new BiomaterialInfoForGUI
+                                {
+                                    BiomaterialId = biomaterialInfo.Id,
+                                    BiomaterialCode = biomaterialInfo.Code,
+                                    BiomaterialName = biomaterialInfo.Name
+                                };
+
+                                // --- пробирка (контейнер) ---
+                                var param = Dictionaries.ServiceParameters
+                                    .FirstOrDefault(p =>
+                                        p.service_id == productDetail.ProductId &&
+                                        p.biomaterial_id == biomaterialInfo.Id);
+
+                                DictionaryTransport transport = null;
+
+                                if (param != null && !string.IsNullOrEmpty(param.transport_id))
+                                {
+                                    transport = Dictionaries.Transport
+                                        .FirstOrDefault(t => t.id == param.transport_id);
+                                }
+
+                                if (transport == null)
+                                {
+                                    var service = Dictionaries.Directory
+                                        .FirstOrDefault(s => s.id == productDetail.ProductId);
+
+                                    if (service != null && !string.IsNullOrEmpty(service.transport_id))
+                                    {
+                                        transport = Dictionaries.Transport
+                                            .FirstOrDefault(t => t.id == service.transport_id);
+                                    }
+                                }
+
+                                if (transport != null)
+                                {
+                                    biomInfo.ContainerId = transport.id;
+                                    biomInfo.ContainerCode = transport.id;
+                                    biomInfo.ContainerName = transport.name;
+                                }
+                                else
+                                {
+                                    biomInfo.ContainerId = "";
+                                    biomInfo.ContainerCode = "";
+                                    biomInfo.ContainerName = "";
+                                }
+
+                                groupForGUI.Biomaterials.Add(biomInfo);
+                                groupForGUI.BiomaterialsSelected.Add(biomInfo);
+                            }
+                        }
+
+                        guiProduct.BiomaterialGroups.Add(groupForGUI);
+                    }
+
 
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
                         return false;

@@ -134,7 +134,7 @@
             this.btSave.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btSave.AutoSize = true;
             this.btSave.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btSave.Location = new System.Drawing.Point(130, 408);
+            this.btSave.Location = new System.Drawing.Point(173, 408);
             this.btSave.Name = "btSave";
             this.btSave.Size = new System.Drawing.Size(86, 26);
             this.btSave.TabIndex = 5;
@@ -146,7 +146,7 @@
             // 
             this.btCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btCancel.Location = new System.Drawing.Point(354, 409);
+            this.btCancel.Location = new System.Drawing.Point(397, 409);
             this.btCancel.Name = "btCancel";
             this.btCancel.Size = new System.Drawing.Size(70, 25);
             this.btCancel.TabIndex = 6;
@@ -341,7 +341,7 @@
             // 
             this.AcceptButton = this.btSave;
             this.CancelButton = this.btCancel;
-            this.ClientSize = new System.Drawing.Size(553, 446);
+            this.ClientSize = new System.Drawing.Size(639, 446);
             this.Controls.Add(this.btCancel);
             this.Controls.Add(this.btSave);
             this.Controls.Add(this.gbTemplate);

@@ -9,6 +9,7 @@ using System.Xml;
 using System.Runtime.InteropServices;
 using System.ServiceModel.Description;
 using System.Net;
+using SiMed.Laboratory;
 namespace Gemotest
 {
     internal static class Program
@@ -20,7 +21,6 @@ namespace Gemotest
         [STAThread]
         static void Main()
         {
-        
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

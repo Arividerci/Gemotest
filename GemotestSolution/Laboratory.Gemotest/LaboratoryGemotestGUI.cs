@@ -141,7 +141,7 @@ namespace Laboratory.Gemotest
                                 {
                                     biomInfo.ContainerId = transport.id;
                                     biomInfo.ContainerCode = "";
-;                                    biomInfo.ContainerName = transport.name; 
+;                                   biomInfo.ContainerName = transport.name; 
                                 }
                                 else
                                 {
@@ -290,6 +290,7 @@ namespace Laboratory.Gemotest
                 {
                     int productIndex = _OrderModel.ProductsInfo.IndexOf(_Product);
                     _OrderModel.ProductsInfo.Remove(_Product);
+
                     GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
                     details.DeleteProduct(productIndex);
 
@@ -298,6 +299,7 @@ namespace Laboratory.Gemotest
                         ProductInfoForGUI curProductInfo = _OrderModel.ProductsInfo[i];
                         curProductInfo.OrderProductGuid = i.ToString();
                     }
+
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
                         return false;
 
@@ -318,8 +320,13 @@ namespace Laboratory.Gemotest
                     List<ProductInfoForGUI> products = new List<ProductInfoForGUI>();
                     List<ProductGroupInfoForGUI> productGroups = new List<ProductGroupInfoForGUI>();
 
+                    // формируем список услуг для выбора, отбрасывая ненужные типы (3 и 4)
                     foreach (var prod in AllProducts)
                     {
+                        var svc = Dictionaries.Directory?.FirstOrDefault(s => s.id == prod.ID);
+                        if (svc != null && (svc.service_type == 3 || svc.service_type == 4))
+                            continue;
+
                         products.Add(new ProductInfoForGUI()
                         {
                             OrderProductGuid = Guid.NewGuid().ToString(),
@@ -339,12 +346,10 @@ namespace Laboratory.Gemotest
                     if (productNew == null)
                         return false;
 
-                    // === маркетинговый комплекс: уточняем услугу (IRON/FERRITIN/...) ===
-                    productNew = ResolveMarketingComplex(productNew);
-                    if (productNew == null)
-                        return false; // пользователь отменил выбор в форме комплекса
+                    // маркетинговый комплекс (service_type == 2) теперь НЕ разворачиваем,
+                    // НЕ спрашиваем IRON/FERRITIN – просто добавляем сам комплекс
 
-                    // Проверка: такая услуга уже есть в заказе?
+                    // Проверка на дубликат услуги в заказе
                     if (details.Products != null &&
                         details.Products.Any(p => string.Equals(p.ProductId, productNew.Id, StringComparison.OrdinalIgnoreCase)))
                     {
@@ -356,7 +361,6 @@ namespace Laboratory.Gemotest
                         return false;
                     }
 
-                    // Индекс новой позиции
                     int newIndex = details.Products.Count;
 
                     productNew.OrderProductGuid = newIndex.ToString();
@@ -372,12 +376,11 @@ namespace Laboratory.Gemotest
 
                     details.Products.Add(productInfo);
 
-                    // авто-добавление услуг по Service_auto_insert (если уже сделал этот метод)
+                    // авто-добавление зависимых услуг
                     ApplyAutoInsertServices(details, _OrderModel);
 
-                    // Пересчитать биоматериалы и группы
+                    // пересчитать биоматериалы (для маркетингового комплекса будут свои, все отмечены)
                     details.AddBiomaterialsFromProducts();
-
                     RebuildBiomaterialGroups(details, _OrderModel);
 
                     if (!SaveOrderModelForGUIToDetails(_Order, _OrderModel))
@@ -394,9 +397,15 @@ namespace Laboratory.Gemotest
 
                 if (_Action == eOrderAction.PrepareOrderForSend)
                 {
-                    if (!PrepareOrderForSend(_Order))
+                    if (!EnsureAdditionalPatientInfo(_Order, _OrderModel))
                         return false;
+
+                    if (!SendOrderToGemotest(_Order))
+                        return false;
+
+                    return true;
                 }
+
 
                 return true;
             }
@@ -407,7 +416,70 @@ namespace Laboratory.Gemotest
             }
         }
 
-        private ProductInfoForGUI ResolveMarketingComplex(ProductInfoForGUI selectedProduct)
+        private bool SendOrderToGemotest(Order order)
+        {
+            LastException = null;
+
+            try
+            {
+                if (order == null)
+                    throw new InvalidOperationException("Заказ не задан.");
+
+                var details = order.OrderDetail as GemotestOrderDetail;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                if (details.Products == null || details.Products.Count == 0)
+                    throw new InvalidOperationException("В заказе нет ни одной услуги.");
+
+                // гарантируем, что глобальные опции инициализированы
+                if (globalOptions == null)
+                    globalOptions = new OptionsGemotest();
+
+                // класс, который собирает XML и делает SOAP-запрос (из отдельного файла GemotestOrderSender.cs)
+                var sender = new GemotestOrderSender(
+                    globalOptions.UrlAdress,        
+                    globalOptions.Contractor_Code,  
+                    globalOptions.Salt,      
+                    globalOptions.Login,
+                    globalOptions.Password
+                );
+
+                string errorMessage;
+                if (!sender.CreateOrder(order, out errorMessage))
+                {
+                    if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        MessageBox.Show(
+                            errorMessage,
+                            "Ошибка отправки заказа в Гемотест",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+
+                    return false;
+                }
+
+                // если create_order отработал без ошибок – помечаем заказ подготовленным
+                order.State = OrderState.Prepared;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LastException = ex;
+
+                MessageBox.Show(
+                    ex.Message,
+                    "Ошибка подготовки заказа",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return false;
+            }
+        }
+
+
+        /*private ProductInfoForGUI ResolveMarketingComplex(ProductInfoForGUI selectedProduct)
         {
             if (selectedProduct == null || string.IsNullOrEmpty(selectedProduct.Id))
                 return selectedProduct;
@@ -467,7 +539,7 @@ namespace Laboratory.Gemotest
             var chosen = complexProducts.FirstOrDefault(p => p.OrderProductGuid == form.selectedProductGuid);
             return chosen ?? selectedProduct;
         }
-
+*/
 
         private void RebuildBiomaterialGroups(GemotestOrderDetail details, OrderModelForGUI model)
         {
@@ -488,10 +560,7 @@ namespace Laboratory.Gemotest
         {
             var group = new BiomaterialGroupForGUI();
 
-            if (details?.Products == null ||
-                details.BioMaterials == null ||
-                productIndex < 0 ||
-                productIndex >= details.Products.Count)
+            if (details.Products == null || productIndex < 0 || productIndex >= details.Products.Count)
                 return group;
 
             var productDetail = details.Products[productIndex];
@@ -499,10 +568,9 @@ namespace Laboratory.Gemotest
             int serviceType = service?.service_type ?? 0;
 
             var linkedBioms = details.BioMaterials
-                .Where(b =>
-                    b.Mandatory.Contains(productIndex) ||
-                    b.Chosen.Contains(productIndex) ||
-                    b.Another.Contains(productIndex))
+                .Where(b => b.Mandatory.Contains(productIndex)
+                            || b.Chosen.Contains(productIndex)
+                            || b.Another.Contains(productIndex))
                 .ToList();
 
             foreach (var biom in linkedBioms)
@@ -543,12 +611,18 @@ namespace Laboratory.Gemotest
                 group.Biomaterials.Add(biomInfo);
             }
 
+            if (serviceType == 2)
+            {
+                group.SelectOnlyOne = false;
+                foreach (var biomInfo in group.Biomaterials)
+                    group.BiomaterialsSelected.Add(biomInfo);
+
+                return group;
+            }
+
             group.SelectOnlyOne = true;
 
-            var mandatoryBioms = linkedBioms
-                .Where(b => b.Mandatory.Contains(productIndex))
-                .ToList();
-
+            var mandatoryBioms = linkedBioms.Where(b => b.Mandatory.Contains(productIndex)).ToList();
             foreach (var mand in mandatoryBioms)
             {
                 var info = group.Biomaterials.FirstOrDefault(bi => bi.BiomaterialId == mand.Id);
@@ -556,9 +630,7 @@ namespace Laboratory.Gemotest
                     group.BiomaterialsSelected.Add(info);
             }
 
-            var optionalCandidates = linkedBioms
-                .Where(b => !b.Mandatory.Contains(productIndex))
-                .ToList();
+            var optionalCandidates = linkedBioms.Where(b => !b.Mandatory.Contains(productIndex)).ToList();
 
             if (optionalCandidates.Count == 1)
             {
@@ -571,8 +643,139 @@ namespace Laboratory.Gemotest
             return group;
         }
 
+        private bool EnsureAdditionalPatientInfo(Order order, OrderModelForGUI model)
+        {
+            bool needPassport = false;
+            bool needAddress = false;
+            bool needSnils = false;
+
+            foreach (var p in model.ProductsInfo)
+            {
+                var svc = Dictionaries.Directory?.FirstOrDefault(s => s.id == p.Id);
+                if (svc == null)
+                    continue;
+
+                if (svc.is_passport_required)
+                    needPassport = true;
+                if (svc.is_address_required)
+                    needAddress = true;
+
+                // если есть флаг по СНИЛС – сюда
+                // if (svc.is_snils_required) needSnils = true;
+            }
+
+            if (!needPassport && !needAddress && !needSnils)
+                return true;
+
+            using (var form = new FormAdditionalPatientInfo(order, needPassport, needAddress, needSnils))
+            {
+                if (form.ShowDialog() != DialogResult.OK)
+                    return false;
+
+            }
+
+            return true;
+        }
 
         private bool PrepareOrderForSend(Order _Order)
+        {
+            LastException = null;
+            try
+            {
+                if (_Order == null)
+                    throw new InvalidOperationException("Заказ (_Order) не задан.");
+
+                var details = _Order.OrderDetail as GemotestOrderDetail;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                if (details.Products == null || details.Products.Count == 0)
+                    throw new InvalidOperationException("В заказе нет ни одной услуги.");
+
+                // --- гарантируем, что options не null ---
+                if (globalOptions == null)
+                    globalOptions = new OptionsGemotest();      // твой класс с UrlAdress, Contractor_Code, Salt и т.д.
+
+                if (localOptions == null)
+                    localOptions = new LocalOptionsGemotest();  // если такого класса нет – убери эту строчку и проверки ниже
+
+                // --- печать бланка / стикеров как было ---
+                if (localOptions.PrintBlankAtOnce)
+                {
+                    ResultsCollection results = null;
+                    PrintLaboratoryDocument(
+                        _Order,
+                        ref results,
+                        new DocumentInfoForGUI() { DocType = LaboratoryPrintDocumentType.Blank },
+                        false);
+                }
+
+                if (localOptions.PrintStikersAtOnce)
+                {
+                    var samples = new List<SampleInfoForGUI>();
+
+                    string orderNumberNormalized = _Order.Number ?? string.Empty;
+                    while (orderNumberNormalized.Length < 9)
+                        orderNumberNormalized = '0' + orderNumberNormalized;
+
+                    if (details.BioMaterials != null)
+                    {
+                        foreach (GemotestBioMaterial cLB in details.BioMaterials)
+                        {
+                            if (cLB != null &&
+                                (cLB.Chosen.Count > 0 || cLB.Mandatory.Count > 0))
+                            {
+                                samples.Add(new SampleInfoForGUI()
+                                {
+                                    // заполни по своему формату этикеток
+                                });
+                            }
+                        }
+                    }
+
+                    PrintStikers(_Order, samples);
+                }
+
+                // --- отправка в отдельный класс ---
+                var sender = new GemotestOrderSender(
+                    globalOptions.UrlAdress,
+                    globalOptions.Contractor_Code,
+                    globalOptions.Salt,
+                    globalOptions.Login,
+                    globalOptions.Password
+                );
+
+                string errorMessage;
+                if (!sender.CreateOrder(_Order, out errorMessage))
+                {
+                    if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        MessageBox.Show(
+                            errorMessage,
+                            "Ошибка отправки заказа в Гемотест",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                    return false;
+                }
+
+                _Order.State = OrderState.Prepared;
+                return true;
+            }
+            catch (Exception exc)
+            {
+                LastException = exc;
+                MessageBox.Show(
+                    exc.Message,
+                    "Ошибка подготовки заказа",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+
+        /*private bool PrepareOrderForSend(Order _Order)
         {
             LastException = null;
             try
@@ -613,7 +816,7 @@ namespace Laboratory.Gemotest
                 LastException = exc;
                 return false;
             }
-        }
+        }*/
 
         public bool ValidateGUIModel(OrderModelForGUI _Model)
         {

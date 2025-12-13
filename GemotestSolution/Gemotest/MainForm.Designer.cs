@@ -28,12 +28,16 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.настройкиToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.GemotestOptions_toolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.SystemOptions_toolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.LoadDictionaries_ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.отладкаКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.включитьКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.выключитьКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.CreateOrder_button = new System.Windows.Forms.Button();
             this.groupBoxOrder = new System.Windows.Forms.GroupBox();
             this.labelComment = new System.Windows.Forms.Label();
@@ -42,8 +46,6 @@
             this.textBoxDoctor = new System.Windows.Forms.TextBox();
             this.labelOrderNum = new System.Windows.Forms.Label();
             this.textBoxOrderNum = new System.Windows.Forms.TextBox();
-            this.labelExtNum = new System.Windows.Forms.Label();
-            this.textBoxExtNum = new System.Windows.Forms.TextBox();
             this.groupBoxPatient = new System.Windows.Forms.GroupBox();
             this.checkBoxAnonymous = new System.Windows.Forms.CheckBox();
             this.comboBoxSex = new System.Windows.Forms.ComboBox();
@@ -56,22 +58,10 @@
             this.labelName = new System.Windows.Forms.Label();
             this.textBoxSurname = new System.Windows.Forms.TextBox();
             this.labelSurname = new System.Windows.Forms.Label();
-            this.groupBoxInforming = new System.Windows.Forms.GroupBox();
-            this.checkBoxSmsNotify = new System.Windows.Forms.CheckBox();
-            this.textBoxHomePhone = new System.Windows.Forms.TextBox();
-            this.labelHomePhone = new System.Windows.Forms.Label();
-            this.textBoxMobilePhone = new System.Windows.Forms.TextBox();
-            this.labelMobilePhone = new System.Windows.Forms.Label();
-            this.textBoxEmail = new System.Windows.Forms.TextBox();
-            this.labelEmail = new System.Windows.Forms.Label();
             this.CheckResult_button = new System.Windows.Forms.Button();
-            this.отладкаКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.включитьКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.выключитьКонсольToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.groupBoxOrder.SuspendLayout();
             this.groupBoxPatient.SuspendLayout();
-            this.groupBoxInforming.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -82,7 +72,7 @@
             this.настройкиToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(880, 28);
+            this.menuStrip1.Size = new System.Drawing.Size(705, 28);
             this.menuStrip1.TabIndex = 4;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -100,321 +90,23 @@
             // GemotestOptions_toolStripMenuItem
             // 
             this.GemotestOptions_toolStripMenuItem.Name = "GemotestOptions_toolStripMenuItem";
-            this.GemotestOptions_toolStripMenuItem.Size = new System.Drawing.Size(291, 26);
-            this.GemotestOptions_toolStripMenuItem.Text = "Параметры аутентификации";
+            this.GemotestOptions_toolStripMenuItem.Size = new System.Drawing.Size(273, 26);
+            this.GemotestOptions_toolStripMenuItem.Text = "Параметры ЛИС Гемотест";
             this.GemotestOptions_toolStripMenuItem.Click += new System.EventHandler(this.GemotestOptions_toolStripMenuItem_Click);
             // 
             // SystemOptions_toolStripMenuItem
             // 
             this.SystemOptions_toolStripMenuItem.Name = "SystemOptions_toolStripMenuItem";
-            this.SystemOptions_toolStripMenuItem.Size = new System.Drawing.Size(291, 26);
+            this.SystemOptions_toolStripMenuItem.Size = new System.Drawing.Size(273, 26);
             this.SystemOptions_toolStripMenuItem.Text = "Параметы принтера";
             this.SystemOptions_toolStripMenuItem.Click += new System.EventHandler(this.SystemOptions_toolStripMenuItem_Click);
             // 
             // LoadDictionaries_ToolStripMenuItem
             // 
             this.LoadDictionaries_ToolStripMenuItem.Name = "LoadDictionaries_ToolStripMenuItem";
-            this.LoadDictionaries_ToolStripMenuItem.Size = new System.Drawing.Size(291, 26);
+            this.LoadDictionaries_ToolStripMenuItem.Size = new System.Drawing.Size(273, 26);
             this.LoadDictionaries_ToolStripMenuItem.Text = "Загрузить справочники";
             this.LoadDictionaries_ToolStripMenuItem.Click += new System.EventHandler(this.LoadDictionaries_ToolStripMenuItem_Click);
-            // 
-            // CreateOrder_button
-            // 
-            this.CreateOrder_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.CreateOrder_button.FlatAppearance.BorderSize = 0;
-            this.CreateOrder_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CreateOrder_button.Location = new System.Drawing.Point(656, 230);
-            this.CreateOrder_button.Name = "CreateOrder_button";
-            this.CreateOrder_button.Size = new System.Drawing.Size(169, 32);
-            this.CreateOrder_button.TabIndex = 20;
-            this.CreateOrder_button.Text = "Создать заказ";
-            this.CreateOrder_button.UseVisualStyleBackColor = false;
-            this.CreateOrder_button.Click += new System.EventHandler(this.CheckResult_button_Click);
-            // 
-            // groupBoxOrder
-            // 
-            this.groupBoxOrder.Controls.Add(this.labelComment);
-            this.groupBoxOrder.Controls.Add(this.textBoxComment);
-            this.groupBoxOrder.Controls.Add(this.labelDoctor);
-            this.groupBoxOrder.Controls.Add(this.textBoxDoctor);
-            this.groupBoxOrder.Controls.Add(this.labelOrderNum);
-            this.groupBoxOrder.Controls.Add(this.textBoxOrderNum);
-            this.groupBoxOrder.Controls.Add(this.labelExtNum);
-            this.groupBoxOrder.Controls.Add(this.textBoxExtNum);
-            this.groupBoxOrder.Location = new System.Drawing.Point(12, 40);
-            this.groupBoxOrder.Name = "groupBoxOrder";
-            this.groupBoxOrder.Size = new System.Drawing.Size(420, 150);
-            this.groupBoxOrder.TabIndex = 7;
-            this.groupBoxOrder.TabStop = false;
-            this.groupBoxOrder.Text = "Заказ";
-            // 
-            // labelComment
-            // 
-            this.labelComment.AutoSize = true;
-            this.labelComment.Location = new System.Drawing.Point(10, 95);
-            this.labelComment.Name = "labelComment";
-            this.labelComment.Size = new System.Drawing.Size(99, 16);
-            this.labelComment.TabIndex = 7;
-            this.labelComment.Text = "Комментарий:";
-            // 
-            // textBoxComment
-            // 
-            this.textBoxComment.Location = new System.Drawing.Point(130, 92);
-            this.textBoxComment.Multiline = true;
-            this.textBoxComment.Name = "textBoxComment";
-            this.textBoxComment.Size = new System.Drawing.Size(274, 48);
-            this.textBoxComment.TabIndex = 3;
-            // 
-            // labelDoctor
-            // 
-            this.labelDoctor.AutoSize = true;
-            this.labelDoctor.Location = new System.Drawing.Point(10, 65);
-            this.labelDoctor.Name = "labelDoctor";
-            this.labelDoctor.Size = new System.Drawing.Size(43, 16);
-            this.labelDoctor.TabIndex = 5;
-            this.labelDoctor.Text = "Врач:";
-            // 
-            // textBoxDoctor
-            // 
-            this.textBoxDoctor.Location = new System.Drawing.Point(130, 62);
-            this.textBoxDoctor.Name = "textBoxDoctor";
-            this.textBoxDoctor.Size = new System.Drawing.Size(274, 22);
-            this.textBoxDoctor.TabIndex = 2;
-            // 
-            // labelOrderNum
-            // 
-            this.labelOrderNum.AutoSize = true;
-            this.labelOrderNum.Location = new System.Drawing.Point(10, 40);
-            this.labelOrderNum.Name = "labelOrderNum";
-            this.labelOrderNum.Size = new System.Drawing.Size(103, 16);
-            this.labelOrderNum.TabIndex = 3;
-            this.labelOrderNum.Text = "Номер заказа:";
-            // 
-            // textBoxOrderNum
-            // 
-            this.textBoxOrderNum.Location = new System.Drawing.Point(130, 37);
-            this.textBoxOrderNum.Name = "textBoxOrderNum";
-            this.textBoxOrderNum.Size = new System.Drawing.Size(274, 22);
-            this.textBoxOrderNum.TabIndex = 1;
-            // 
-            // labelExtNum
-            // 
-            this.labelExtNum.AutoSize = true;
-            this.labelExtNum.Location = new System.Drawing.Point(10, 15);
-            this.labelExtNum.Name = "labelExtNum";
-            this.labelExtNum.Size = new System.Drawing.Size(112, 16);
-            this.labelExtNum.TabIndex = 1;
-            this.labelExtNum.Text = "Внешний номер:";
-            // 
-            // textBoxExtNum
-            // 
-            this.textBoxExtNum.Location = new System.Drawing.Point(130, 12);
-            this.textBoxExtNum.Name = "textBoxExtNum";
-            this.textBoxExtNum.Size = new System.Drawing.Size(274, 22);
-            this.textBoxExtNum.TabIndex = 0;
-            // 
-            // groupBoxPatient
-            // 
-            this.groupBoxPatient.Controls.Add(this.checkBoxAnonymous);
-            this.groupBoxPatient.Controls.Add(this.comboBoxSex);
-            this.groupBoxPatient.Controls.Add(this.labelSex);
-            this.groupBoxPatient.Controls.Add(this.dateTimePickerBirthdate);
-            this.groupBoxPatient.Controls.Add(this.labelBirthdate);
-            this.groupBoxPatient.Controls.Add(this.textBoxPatronymic);
-            this.groupBoxPatient.Controls.Add(this.labelPatronymic);
-            this.groupBoxPatient.Controls.Add(this.textBoxName);
-            this.groupBoxPatient.Controls.Add(this.labelName);
-            this.groupBoxPatient.Controls.Add(this.textBoxSurname);
-            this.groupBoxPatient.Controls.Add(this.labelSurname);
-            this.groupBoxPatient.Location = new System.Drawing.Point(12, 200);
-            this.groupBoxPatient.Name = "groupBoxPatient";
-            this.groupBoxPatient.Size = new System.Drawing.Size(580, 150);
-            this.groupBoxPatient.TabIndex = 8;
-            this.groupBoxPatient.TabStop = false;
-            this.groupBoxPatient.Text = "Пациент";
-            // 
-            // checkBoxAnonymous
-            // 
-            this.checkBoxAnonymous.AutoSize = true;
-            this.checkBoxAnonymous.Location = new System.Drawing.Point(430, 115);
-            this.checkBoxAnonymous.Name = "checkBoxAnonymous";
-            this.checkBoxAnonymous.Size = new System.Drawing.Size(104, 20);
-            this.checkBoxAnonymous.TabIndex = 10;
-            this.checkBoxAnonymous.Text = "Анонимный";
-            this.checkBoxAnonymous.UseVisualStyleBackColor = true;
-            // 
-            // comboBoxSex
-            // 
-            this.comboBoxSex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.comboBoxSex.FormattingEnabled = true;
-            this.comboBoxSex.Items.AddRange(new object[] {
-            "Не указан",
-            "Мужской",
-            "Женский"});
-            this.comboBoxSex.Location = new System.Drawing.Point(360, 80);
-            this.comboBoxSex.Name = "comboBoxSex";
-            this.comboBoxSex.Size = new System.Drawing.Size(192, 24);
-            this.comboBoxSex.TabIndex = 9;
-            // 
-            // labelSex
-            // 
-            this.labelSex.AutoSize = true;
-            this.labelSex.Location = new System.Drawing.Point(317, 83);
-            this.labelSex.Name = "labelSex";
-            this.labelSex.Size = new System.Drawing.Size(36, 16);
-            this.labelSex.TabIndex = 8;
-            this.labelSex.Text = "Пол:";
-            // 
-            // dateTimePickerBirthdate
-            // 
-            this.dateTimePickerBirthdate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dateTimePickerBirthdate.Location = new System.Drawing.Point(120, 80);
-            this.dateTimePickerBirthdate.Name = "dateTimePickerBirthdate";
-            this.dateTimePickerBirthdate.Size = new System.Drawing.Size(180, 22);
-            this.dateTimePickerBirthdate.TabIndex = 7;
-            // 
-            // labelBirthdate
-            // 
-            this.labelBirthdate.AutoSize = true;
-            this.labelBirthdate.Location = new System.Drawing.Point(10, 83);
-            this.labelBirthdate.Name = "labelBirthdate";
-            this.labelBirthdate.Size = new System.Drawing.Size(109, 16);
-            this.labelBirthdate.TabIndex = 6;
-            this.labelBirthdate.Text = "Дата рождения:";
-            // 
-            // textBoxPatronymic
-            // 
-            this.textBoxPatronymic.Location = new System.Drawing.Point(120, 55);
-            this.textBoxPatronymic.Name = "textBoxPatronymic";
-            this.textBoxPatronymic.Size = new System.Drawing.Size(432, 22);
-            this.textBoxPatronymic.TabIndex = 5;
-            // 
-            // labelPatronymic
-            // 
-            this.labelPatronymic.AutoSize = true;
-            this.labelPatronymic.Location = new System.Drawing.Point(10, 58);
-            this.labelPatronymic.Name = "labelPatronymic";
-            this.labelPatronymic.Size = new System.Drawing.Size(73, 16);
-            this.labelPatronymic.TabIndex = 4;
-            this.labelPatronymic.Text = "Отчество:";
-            // 
-            // textBoxName
-            // 
-            this.textBoxName.Location = new System.Drawing.Point(362, 30);
-            this.textBoxName.Name = "textBoxName";
-            this.textBoxName.Size = new System.Drawing.Size(190, 22);
-            this.textBoxName.TabIndex = 3;
-            // 
-            // labelName
-            // 
-            this.labelName.AutoSize = true;
-            this.labelName.Location = new System.Drawing.Point(317, 33);
-            this.labelName.Name = "labelName";
-            this.labelName.Size = new System.Drawing.Size(36, 16);
-            this.labelName.TabIndex = 2;
-            this.labelName.Text = "Имя:";
-            // 
-            // textBoxSurname
-            // 
-            this.textBoxSurname.Location = new System.Drawing.Point(120, 30);
-            this.textBoxSurname.Name = "textBoxSurname";
-            this.textBoxSurname.Size = new System.Drawing.Size(180, 22);
-            this.textBoxSurname.TabIndex = 1;
-            // 
-            // labelSurname
-            // 
-            this.labelSurname.AutoSize = true;
-            this.labelSurname.Location = new System.Drawing.Point(10, 33);
-            this.labelSurname.Name = "labelSurname";
-            this.labelSurname.Size = new System.Drawing.Size(69, 16);
-            this.labelSurname.TabIndex = 0;
-            this.labelSurname.Text = "Фамилия:";
-            // 
-            // groupBoxInforming
-            // 
-            this.groupBoxInforming.Controls.Add(this.checkBoxSmsNotify);
-            this.groupBoxInforming.Controls.Add(this.textBoxHomePhone);
-            this.groupBoxInforming.Controls.Add(this.labelHomePhone);
-            this.groupBoxInforming.Controls.Add(this.textBoxMobilePhone);
-            this.groupBoxInforming.Controls.Add(this.labelMobilePhone);
-            this.groupBoxInforming.Controls.Add(this.textBoxEmail);
-            this.groupBoxInforming.Controls.Add(this.labelEmail);
-            this.groupBoxInforming.Location = new System.Drawing.Point(450, 40);
-            this.groupBoxInforming.Name = "groupBoxInforming";
-            this.groupBoxInforming.Size = new System.Drawing.Size(418, 150);
-            this.groupBoxInforming.TabIndex = 9;
-            this.groupBoxInforming.TabStop = false;
-            this.groupBoxInforming.Text = "Информирование";
-            // 
-            // checkBoxSmsNotify
-            // 
-            this.checkBoxSmsNotify.AutoSize = true;
-            this.checkBoxSmsNotify.Location = new System.Drawing.Point(13, 118);
-            this.checkBoxSmsNotify.Name = "checkBoxSmsNotify";
-            this.checkBoxSmsNotify.Size = new System.Drawing.Size(150, 20);
-            this.checkBoxSmsNotify.TabIndex = 6;
-            this.checkBoxSmsNotify.Text = "SMS-уведомления";
-            this.checkBoxSmsNotify.UseVisualStyleBackColor = true;
-            // 
-            // textBoxHomePhone
-            // 
-            this.textBoxHomePhone.Location = new System.Drawing.Point(150, 90);
-            this.textBoxHomePhone.Name = "textBoxHomePhone";
-            this.textBoxHomePhone.Size = new System.Drawing.Size(254, 22);
-            this.textBoxHomePhone.TabIndex = 5;
-            // 
-            // labelHomePhone
-            // 
-            this.labelHomePhone.AutoSize = true;
-            this.labelHomePhone.Location = new System.Drawing.Point(10, 93);
-            this.labelHomePhone.Name = "labelHomePhone";
-            this.labelHomePhone.Size = new System.Drawing.Size(138, 16);
-            this.labelHomePhone.TabIndex = 4;
-            this.labelHomePhone.Text = "Домашний телефон:";
-            // 
-            // textBoxMobilePhone
-            // 
-            this.textBoxMobilePhone.Location = new System.Drawing.Point(150, 60);
-            this.textBoxMobilePhone.Name = "textBoxMobilePhone";
-            this.textBoxMobilePhone.Size = new System.Drawing.Size(254, 22);
-            this.textBoxMobilePhone.TabIndex = 3;
-            // 
-            // labelMobilePhone
-            // 
-            this.labelMobilePhone.AutoSize = true;
-            this.labelMobilePhone.Location = new System.Drawing.Point(10, 63);
-            this.labelMobilePhone.Name = "labelMobilePhone";
-            this.labelMobilePhone.Size = new System.Drawing.Size(146, 16);
-            this.labelMobilePhone.TabIndex = 2;
-            this.labelMobilePhone.Text = "Мобильный телефон:";
-            // 
-            // textBoxEmail
-            // 
-            this.textBoxEmail.Location = new System.Drawing.Point(150, 30);
-            this.textBoxEmail.Name = "textBoxEmail";
-            this.textBoxEmail.Size = new System.Drawing.Size(254, 22);
-            this.textBoxEmail.TabIndex = 1;
-            // 
-            // labelEmail
-            // 
-            this.labelEmail.AutoSize = true;
-            this.labelEmail.Location = new System.Drawing.Point(10, 33);
-            this.labelEmail.Name = "labelEmail";
-            this.labelEmail.Size = new System.Drawing.Size(48, 16);
-            this.labelEmail.TabIndex = 0;
-            this.labelEmail.Text = "E-mail:";
-            // 
-            // CheckResult_button
-            // 
-            this.CheckResult_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.CheckResult_button.FlatAppearance.BorderSize = 0;
-            this.CheckResult_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CheckResult_button.Location = new System.Drawing.Point(656, 291);
-            this.CheckResult_button.Name = "CheckResult_button";
-            this.CheckResult_button.Size = new System.Drawing.Size(169, 32);
-            this.CheckResult_button.TabIndex = 21;
-            this.CheckResult_button.Text = "Проверить результат";
-            this.CheckResult_button.UseVisualStyleBackColor = false;
             // 
             // отладкаКонсольToolStripMenuItem
             // 
@@ -422,7 +114,7 @@
             this.включитьКонсольToolStripMenuItem,
             this.выключитьКонсольToolStripMenuItem});
             this.отладкаКонсольToolStripMenuItem.Name = "отладкаКонсольToolStripMenuItem";
-            this.отладкаКонсольToolStripMenuItem.Size = new System.Drawing.Size(291, 26);
+            this.отладкаКонсольToolStripMenuItem.Size = new System.Drawing.Size(273, 26);
             this.отладкаКонсольToolStripMenuItem.Text = "Отладка / Консоль";
             // 
             // включитьКонсольToolStripMenuItem
@@ -441,17 +133,224 @@
             this.выключитьКонсольToolStripMenuItem.Text = "Выключить консоль";
             this.выключитьКонсольToolStripMenuItem.Click += new System.EventHandler(this.выключитьКонсольToolStripMenuItem_Click);
             // 
+            // CreateOrder_button
+            // 
+            this.CreateOrder_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.CreateOrder_button.FlatAppearance.BorderSize = 0;
+            this.CreateOrder_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CreateOrder_button.Location = new System.Drawing.Point(501, 60);
+            this.CreateOrder_button.Name = "CreateOrder_button";
+            this.CreateOrder_button.Size = new System.Drawing.Size(169, 32);
+            this.CreateOrder_button.TabIndex = 20;
+            this.CreateOrder_button.Text = "Создать заказ";
+            this.CreateOrder_button.UseVisualStyleBackColor = false;
+            this.CreateOrder_button.Click += new System.EventHandler(this.CreateOrder_button_Click);
+            // 
+            // groupBoxOrder
+            // 
+            this.groupBoxOrder.Controls.Add(this.labelComment);
+            this.groupBoxOrder.Controls.Add(this.textBoxComment);
+            this.groupBoxOrder.Controls.Add(this.labelDoctor);
+            this.groupBoxOrder.Controls.Add(this.textBoxDoctor);
+            this.groupBoxOrder.Controls.Add(this.labelOrderNum);
+            this.groupBoxOrder.Controls.Add(this.textBoxOrderNum);
+            this.groupBoxOrder.Location = new System.Drawing.Point(12, 40);
+            this.groupBoxOrder.Name = "groupBoxOrder";
+            this.groupBoxOrder.Size = new System.Drawing.Size(420, 150);
+            this.groupBoxOrder.TabIndex = 7;
+            this.groupBoxOrder.TabStop = false;
+            this.groupBoxOrder.Text = "Заказ";
+            // 
+            // labelComment
+            // 
+            this.labelComment.AutoSize = true;
+            this.labelComment.Location = new System.Drawing.Point(10, 88);
+            this.labelComment.Name = "labelComment";
+            this.labelComment.Size = new System.Drawing.Size(99, 16);
+            this.labelComment.TabIndex = 7;
+            this.labelComment.Text = "Комментарий:";
+            // 
+            // textBoxComment
+            // 
+            this.textBoxComment.Location = new System.Drawing.Point(130, 85);
+            this.textBoxComment.Multiline = true;
+            this.textBoxComment.Name = "textBoxComment";
+            this.textBoxComment.Size = new System.Drawing.Size(274, 48);
+            this.textBoxComment.TabIndex = 3;
+            // 
+            // labelDoctor
+            // 
+            this.labelDoctor.AutoSize = true;
+            this.labelDoctor.Location = new System.Drawing.Point(10, 58);
+            this.labelDoctor.Name = "labelDoctor";
+            this.labelDoctor.Size = new System.Drawing.Size(43, 16);
+            this.labelDoctor.TabIndex = 5;
+            this.labelDoctor.Text = "Врач:";
+            // 
+            // textBoxDoctor
+            // 
+            this.textBoxDoctor.Location = new System.Drawing.Point(130, 55);
+            this.textBoxDoctor.Name = "textBoxDoctor";
+            this.textBoxDoctor.Size = new System.Drawing.Size(274, 22);
+            this.textBoxDoctor.TabIndex = 2;
+            // 
+            // labelOrderNum
+            // 
+            this.labelOrderNum.AutoSize = true;
+            this.labelOrderNum.Location = new System.Drawing.Point(10, 33);
+            this.labelOrderNum.Name = "labelOrderNum";
+            this.labelOrderNum.Size = new System.Drawing.Size(103, 16);
+            this.labelOrderNum.TabIndex = 3;
+            this.labelOrderNum.Text = "Номер заказа:";
+            // 
+            // textBoxOrderNum
+            // 
+            this.textBoxOrderNum.Location = new System.Drawing.Point(130, 30);
+            this.textBoxOrderNum.Name = "textBoxOrderNum";
+            this.textBoxOrderNum.Size = new System.Drawing.Size(274, 22);
+            this.textBoxOrderNum.TabIndex = 1;
+            // 
+            // groupBoxPatient
+            // 
+            this.groupBoxPatient.Controls.Add(this.checkBoxAnonymous);
+            this.groupBoxPatient.Controls.Add(this.comboBoxSex);
+            this.groupBoxPatient.Controls.Add(this.labelSex);
+            this.groupBoxPatient.Controls.Add(this.dateTimePickerBirthdate);
+            this.groupBoxPatient.Controls.Add(this.labelBirthdate);
+            this.groupBoxPatient.Controls.Add(this.textBoxPatronymic);
+            this.groupBoxPatient.Controls.Add(this.labelPatronymic);
+            this.groupBoxPatient.Controls.Add(this.textBoxName);
+            this.groupBoxPatient.Controls.Add(this.labelName);
+            this.groupBoxPatient.Controls.Add(this.textBoxSurname);
+            this.groupBoxPatient.Controls.Add(this.labelSurname);
+            this.groupBoxPatient.Location = new System.Drawing.Point(12, 200);
+            this.groupBoxPatient.Name = "groupBoxPatient";
+            this.groupBoxPatient.Size = new System.Drawing.Size(510, 217);
+            this.groupBoxPatient.TabIndex = 8;
+            this.groupBoxPatient.TabStop = false;
+            this.groupBoxPatient.Text = "Пациент";
+            // 
+            // checkBoxAnonymous
+            // 
+            this.checkBoxAnonymous.AutoSize = true;
+            this.checkBoxAnonymous.Location = new System.Drawing.Point(392, 175);
+            this.checkBoxAnonymous.Name = "checkBoxAnonymous";
+            this.checkBoxAnonymous.Size = new System.Drawing.Size(104, 20);
+            this.checkBoxAnonymous.TabIndex = 10;
+            this.checkBoxAnonymous.Text = "Анонимный";
+            this.checkBoxAnonymous.UseVisualStyleBackColor = true;
+            // 
+            // comboBoxSex
+            // 
+            this.comboBoxSex.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBoxSex.FormattingEnabled = true;
+            this.comboBoxSex.Items.AddRange(new object[] {
+            "Не указан",
+            "Мужской",
+            "Женский"});
+            this.comboBoxSex.Location = new System.Drawing.Point(357, 145);
+            this.comboBoxSex.Name = "comboBoxSex";
+            this.comboBoxSex.Size = new System.Drawing.Size(139, 24);
+            this.comboBoxSex.TabIndex = 9;
+            // 
+            // labelSex
+            // 
+            this.labelSex.AutoSize = true;
+            this.labelSex.Location = new System.Drawing.Point(314, 148);
+            this.labelSex.Name = "labelSex";
+            this.labelSex.Size = new System.Drawing.Size(36, 16);
+            this.labelSex.TabIndex = 8;
+            this.labelSex.Text = "Пол:";
+            // 
+            // dateTimePickerBirthdate
+            // 
+            this.dateTimePickerBirthdate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dateTimePickerBirthdate.Location = new System.Drawing.Point(117, 145);
+            this.dateTimePickerBirthdate.Name = "dateTimePickerBirthdate";
+            this.dateTimePickerBirthdate.Size = new System.Drawing.Size(180, 22);
+            this.dateTimePickerBirthdate.TabIndex = 7;
+            // 
+            // labelBirthdate
+            // 
+            this.labelBirthdate.AutoSize = true;
+            this.labelBirthdate.Location = new System.Drawing.Point(7, 148);
+            this.labelBirthdate.Name = "labelBirthdate";
+            this.labelBirthdate.Size = new System.Drawing.Size(109, 16);
+            this.labelBirthdate.TabIndex = 6;
+            this.labelBirthdate.Text = "Дата рождения:";
+            // 
+            // textBoxPatronymic
+            // 
+            this.textBoxPatronymic.Location = new System.Drawing.Point(117, 88);
+            this.textBoxPatronymic.Name = "textBoxPatronymic";
+            this.textBoxPatronymic.Size = new System.Drawing.Size(287, 22);
+            this.textBoxPatronymic.TabIndex = 5;
+            // 
+            // labelPatronymic
+            // 
+            this.labelPatronymic.AutoSize = true;
+            this.labelPatronymic.Location = new System.Drawing.Point(10, 94);
+            this.labelPatronymic.Name = "labelPatronymic";
+            this.labelPatronymic.Size = new System.Drawing.Size(73, 16);
+            this.labelPatronymic.TabIndex = 4;
+            this.labelPatronymic.Text = "Отчество:";
+            // 
+            // textBoxName
+            // 
+            this.textBoxName.Location = new System.Drawing.Point(117, 60);
+            this.textBoxName.Name = "textBoxName";
+            this.textBoxName.Size = new System.Drawing.Size(287, 22);
+            this.textBoxName.TabIndex = 3;
+            // 
+            // labelName
+            // 
+            this.labelName.AutoSize = true;
+            this.labelName.Location = new System.Drawing.Point(10, 63);
+            this.labelName.Name = "labelName";
+            this.labelName.Size = new System.Drawing.Size(36, 16);
+            this.labelName.TabIndex = 2;
+            this.labelName.Text = "Имя:";
+            // 
+            // textBoxSurname
+            // 
+            this.textBoxSurname.Location = new System.Drawing.Point(117, 27);
+            this.textBoxSurname.Name = "textBoxSurname";
+            this.textBoxSurname.Size = new System.Drawing.Size(287, 22);
+            this.textBoxSurname.TabIndex = 1;
+            // 
+            // labelSurname
+            // 
+            this.labelSurname.AutoSize = true;
+            this.labelSurname.Location = new System.Drawing.Point(10, 33);
+            this.labelSurname.Name = "labelSurname";
+            this.labelSurname.Size = new System.Drawing.Size(69, 16);
+            this.labelSurname.TabIndex = 0;
+            this.labelSurname.Text = "Фамилия:";
+            // 
+            // CheckResult_button
+            // 
+            this.CheckResult_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.CheckResult_button.FlatAppearance.BorderSize = 0;
+            this.CheckResult_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.CheckResult_button.Location = new System.Drawing.Point(501, 128);
+            this.CheckResult_button.Name = "CheckResult_button";
+            this.CheckResult_button.Size = new System.Drawing.Size(169, 32);
+            this.CheckResult_button.TabIndex = 21;
+            this.CheckResult_button.Text = "Проверить результат";
+            this.CheckResult_button.UseVisualStyleBackColor = false;
+            this.CheckResult_button.Click += new System.EventHandler(this.CheckResult_button_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(880, 365);
+            this.ClientSize = new System.Drawing.Size(705, 429);
             this.Controls.Add(this.CheckResult_button);
-            this.Controls.Add(this.groupBoxInforming);
             this.Controls.Add(this.groupBoxPatient);
             this.Controls.Add(this.groupBoxOrder);
             this.Controls.Add(this.CreateOrder_button);
             this.Controls.Add(this.menuStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainForm";
             this.Text = "Интеграция с ЛИС \"Гемотест\"";
@@ -462,8 +361,6 @@
             this.groupBoxOrder.PerformLayout();
             this.groupBoxPatient.ResumeLayout(false);
             this.groupBoxPatient.PerformLayout();
-            this.groupBoxInforming.ResumeLayout(false);
-            this.groupBoxInforming.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -485,8 +382,6 @@
         private System.Windows.Forms.TextBox textBoxDoctor;
         private System.Windows.Forms.Label labelOrderNum;
         private System.Windows.Forms.TextBox textBoxOrderNum;
-        private System.Windows.Forms.Label labelExtNum;
-        private System.Windows.Forms.TextBox textBoxExtNum;
         private System.Windows.Forms.GroupBox groupBoxPatient;
         private System.Windows.Forms.CheckBox checkBoxAnonymous;
         private System.Windows.Forms.ComboBox comboBoxSex;
@@ -499,14 +394,6 @@
         private System.Windows.Forms.Label labelName;
         private System.Windows.Forms.TextBox textBoxSurname;
         private System.Windows.Forms.Label labelSurname;
-        private System.Windows.Forms.GroupBox groupBoxInforming;
-        private System.Windows.Forms.CheckBox checkBoxSmsNotify;
-        private System.Windows.Forms.TextBox textBoxHomePhone;
-        private System.Windows.Forms.Label labelHomePhone;
-        private System.Windows.Forms.TextBox textBoxMobilePhone;
-        private System.Windows.Forms.Label labelMobilePhone;
-        private System.Windows.Forms.TextBox textBoxEmail;
-        private System.Windows.Forms.Label labelEmail;
         private System.Windows.Forms.Button CheckResult_button;
         private System.Windows.Forms.ToolStripMenuItem отладкаКонсольToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem включитьКонсольToolStripMenuItem;

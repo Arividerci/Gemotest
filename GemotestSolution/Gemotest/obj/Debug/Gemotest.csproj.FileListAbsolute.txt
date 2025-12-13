@@ -84,3 +84,4 @@ C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gem
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.csproj.Up2Date
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.exe
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Gemotest\obj\Debug\Laboratory.Gemotest.FormGemotestResult.resources

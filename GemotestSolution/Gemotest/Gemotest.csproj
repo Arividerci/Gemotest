@@ -94,6 +94,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormGemotestResult.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGemotestResult.Designer.cs">
+      <DependentUpon>FormGemotestResult.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GemotestAnalysisResultClient.cs" />
+    <Compile Include="GemotestAnalysisResultParser.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,6 +110,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FormGemotestResult.resx">
+      <DependentUpon>FormGemotestResult.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

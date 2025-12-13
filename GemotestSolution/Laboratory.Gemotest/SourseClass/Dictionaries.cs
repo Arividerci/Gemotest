@@ -868,13 +868,23 @@ namespace Laboratory.Gemotest.GemotestRequests
     // Класс для справочника проб (get_samples)
     public class DictionarySamples : BaseDictionary
     {
+        public bool utilize { get; set; }
+        public int priority { get; set; }
+
+        public string transport_id { get; set; } = string.Empty;
+        public string sample_processing_rule_id { get; set; } = string.Empty;
+        public string utilization_type { get; set; } = string.Empty;
+
         public static void PrintToConsole(List<DictionarySamples> output, int count)
         {
-            Console.WriteLine($"Dictionary Samples");
+            Console.WriteLine("Dictionary Samples");
             for (int i = 0; i < Math.Min(count, output.Count); i++)
             {
-                var sample = output[i];
-                Console.WriteLine($"id: {sample.id}, name: {sample.name}, archive: {sample.archive}");
+                var s = output[i];
+                Console.WriteLine(
+                    $"id: {s.id}, name: {s.name}, utilize: {s.utilize}, priority: {s.priority}, " +
+                    $"transport_id: {s.transport_id}, sample_processing_rule_id: {s.sample_processing_rule_id}, utilization_type: {s.utilization_type}, archive: {s.archive}"
+                );
             }
             Console.WriteLine("\n");
         }
@@ -882,42 +892,58 @@ namespace Laboratory.Gemotest.GemotestRequests
         public static List<DictionarySamples> Parse(string xmlContent)
         {
             var samples = new List<DictionarySamples>();
+
             try
             {
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(xmlContent);
 
-                var sampleNodes = doc.SelectNodes("//*[local-name()='samples']/*[local-name()='item'] | //*[local-name()='item']");
+                XmlNodeList sampleNodes = doc.SelectNodes("//*[local-name()='samples']/*[local-name()='item']");
 
-                if (sampleNodes != null && sampleNodes.Count > 0)
+                if (sampleNodes == null || sampleNodes.Count == 0)
                 {
-                    foreach (XmlNode node in sampleNodes)
+                    sampleNodes = doc.SelectNodes("//*[local-name()='item' and contains(@*[local-name()='type'], 'sample')]");
+                }
+
+                if (sampleNodes == null || sampleNodes.Count == 0)
+                {
+                    Console.WriteLine("Элементы <samples>/<item> не найдены.");
+                    return samples;
+                }
+
+                foreach (XmlNode node in sampleNodes)
+                {
+                    var idNode = node.SelectSingleNode("*[local-name()='id']");
+                    var nameNode = node.SelectSingleNode("*[local-name()='name']");
+
+                    var utilizeNode = node.SelectSingleNode("*[local-name()='utilize']");
+                    var priorityNode = node.SelectSingleNode("*[local-name()='priority']");
+                    var transportNode = node.SelectSingleNode("*[local-name()='transport_id']");
+                    var ruleNode = node.SelectSingleNode("*[local-name()='sample_processing_rule_id']");
+                    var utilTypeNode = node.SelectSingleNode("*[local-name()='utilization_type']");
+
+                    var archiveNode = node.SelectSingleNode("*[local-name()='archive']");
+
+                    var sample = new DictionarySamples
                     {
-                        var idNode = node.SelectSingleNode("*[local-name()='id']");
-                        var nameNode = node.SelectSingleNode("*[local-name()='name']");
-                        var archiveNode = node.SelectSingleNode("*[local-name()='archive']");
+                        id = (idNode?.InnerText ?? string.Empty).Trim(),
+                        name = (nameNode?.InnerText ?? string.Empty).Trim(),
 
-                        int archiveValue = ParseArchive(archiveNode);
+                        utilize = ParseBool(utilizeNode),
+                        priority = ParseInt(priorityNode),
 
-                        var sample = new DictionarySamples
-                        {
-                            id = idNode?.InnerText ?? string.Empty,
-                            name = nameNode?.InnerText ?? string.Empty,
-                            archive = archiveValue
-                        };
+                        transport_id = (transportNode?.InnerText ?? string.Empty).Trim(),
+                        sample_processing_rule_id = (ruleNode?.InnerText ?? string.Empty).Trim(),
+                        utilization_type = (utilTypeNode?.InnerText ?? string.Empty).Trim(),
 
-                        if (!string.IsNullOrEmpty(sample.id) && sample.id != "*")
-                        {
-                            samples.Add(sample);
-                        }
-                    }
-                    return samples;
+                        archive = ParseInt(archiveNode) 
+                    };
+
+                    if (!string.IsNullOrEmpty(sample.id) && sample.id != "*")
+                        samples.Add(sample);
                 }
-                else
-                {
-                    Console.WriteLine("Элементы <item> не найдены.");
-                    return samples;
-                }
+
+                return samples;
             }
             catch (XmlException ex)
             {
@@ -931,12 +957,29 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
-        private static int ParseArchive(XmlNode archiveNode)
+        private static int ParseInt(XmlNode node)
         {
-            if (archiveNode == null) return 0;
-            var nilAttribute = archiveNode.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
-            if (nilAttribute != null && nilAttribute.Value == "true") return 0;
-            return int.TryParse(archiveNode.InnerText, out int value) ? value : 0;
+            if (node == null) return 0;
+            if (IsNil(node)) return 0;
+            return int.TryParse((node.InnerText ?? "").Trim(), out int value) ? value : 0;
+        }
+
+        private static bool ParseBool(XmlNode node)
+        {
+            if (node == null) return false;
+            if (IsNil(node)) return false;
+
+            var s = (node.InnerText ?? "").Trim();
+            if (bool.TryParse(s, out bool b)) return b;
+            if (s == "1") return true;
+            if (s == "0") return false;
+            return false;
+        }
+
+        private static bool IsNil(XmlNode node)
+        {
+            var nilAttribute = node.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
+            return nilAttribute != null && nilAttribute.Value == "true";
         }
     }
 

@@ -89,13 +89,11 @@ namespace Laboratory.Gemotest
 
             ProductsCollection pC = new ProductsCollection();
 
-            foreach (var p in product) // product: List<ProductGemotest>
+            foreach (var p in product) 
             {
-                // Отсеиваем всё «заблокированное»
                 if (p.IsBlocked)
                     continue;
 
-                // Явно режем ненужные типы услуг
                 if (p.ServiceType == 3 || p.ServiceType == 4)
                     continue;
 
@@ -117,6 +115,44 @@ namespace Laboratory.Gemotest
         public Product ChooseProduct(Product _SourceProduct = null) {
 
             return null; 
+        }
+
+        private void PrintInitHeader()
+        {
+            try
+            {
+                Console.OutputEncoding = Encoding.UTF8;
+            }
+            catch
+            {
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("╔════════════════════════════════════════════════════╗");
+            Console.WriteLine("║        Гемотест: инициализация модуля ЛИС         ║");
+            Console.WriteLine("╚════════════════════════════════════════════════════╝");
+        }
+
+        private void PrintInitStep(int step, int total, string text)
+        {
+            string prefix = $"[{step}/{total}]".PadRight(8);
+            Console.WriteLine();
+            Console.WriteLine($"{prefix}{text}...");
+        }
+
+        private void PrintInitOk()
+        {
+            Console.WriteLine("        → [OK]");
+        }
+
+        private void PrintInitWarn(string message)
+        {
+            Console.WriteLine($"        → [WARN] {message}");
+        }
+
+        private void PrintInitFail(string message)
+        {
+            Console.WriteLine($"        → [FAIL] {message}");
         }
 
         public BaseOrderDetail CreateOrderDetail() { return new GemotestOrderDetail(); }
@@ -149,11 +185,6 @@ namespace Laboratory.Gemotest
 
         public bool CreateOrder(Order _Order) {
 
-            if (_Order.Items.Count == 0)
-            {
-                MessageBox.Show("Не выбрано ни одной услуги для формирования заказа!", "Ошибка!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
             GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
             if (details.Products.Count == 0)
             {
@@ -260,58 +291,118 @@ namespace Laboratory.Gemotest
         public void SetNumerator(INumerator _Numerator) { }
 
         private const string OptionsFilePath = "options.xml";
-        private const string LocalOptionsFilePath = "local_options.xml"; 
+        private const string LocalOptionsFilePath = "local_options.xml";
 
         public bool Init()
         {
+            const int totalSteps = 5;
+            int step = 0;
+
             try
             {
+                PrintInitHeader();
+
+                step++;
+                PrintInitStep(step, totalSteps, "Загрузка системных опций из options.xml");
                 if (Options == null)
                 {
                     Options = OptionsGemotest.LoadFromFile(OptionsFilePath);
                 }
 
+                if (Options == null)
+                {
+                    PrintInitFail("Не удалось загрузить системные опции (options.xml).");
+                    return false;
+                }
+                PrintInitOk();
+
+                step++;
+                PrintInitStep(step, totalSteps, "Загрузка локальных опций");
                 if (LocalOptions == null)
                 {
-                    
-                    LocalOptions = new LocalOptionsGemotest(); 
+                    LocalOptions = new LocalOptionsGemotest();
+                    PrintInitWarn("Локальные опции не найдены, создан объект по умолчанию.");
+                }
+                else
+                {
+                    PrintInitOk();
                 }
 
+                step++;
+                PrintInitStep(step, totalSteps, "Инициализация сервиса Gemotest");
                 if (Gemotest == null && Options != null)
                 {
-                    if (!string.IsNullOrEmpty(Options.UrlAdress) && !string.IsNullOrEmpty(Options.Login) &&
-                        !string.IsNullOrEmpty(Options.Password) && !string.IsNullOrEmpty(Options.Contractor) &&
-                        !string.IsNullOrEmpty(Options.Contractor_Code) && !string.IsNullOrEmpty(Options.Salt))
+                    if (!string.IsNullOrEmpty(Options.UrlAdress) &&
+                        !string.IsNullOrEmpty(Options.Login) &&
+                        !string.IsNullOrEmpty(Options.Password) &&
+                        !string.IsNullOrEmpty(Options.Contractor) &&
+                        !string.IsNullOrEmpty(Options.Contractor_Code) &&
+                        !string.IsNullOrEmpty(Options.Salt))
                     {
-                        Gemotest = new GemotestService(Options.UrlAdress, Options.Login, Options.Password,
-                                                       Options.Contractor, Options.Contractor_Code, Options.Salt);
+                        Gemotest = new GemotestService(
+                            Options.UrlAdress,
+                            Options.Login,
+                            Options.Password,
+                            Options.Contractor,
+                            Options.Contractor_Code,
+                            Options.Salt);
+                        PrintInitOk();
                     }
                     else
                     {
-                        Console.WriteLine("Предупреждение: Опции Gemotest неполные. Сервис не инициализирован.");
+                        PrintInitFail("Опции Gemotest неполные. Сервис не инициализирован.");
+                        Console.WriteLine("        Проверьте UrlAdress, Login, Password, Contractor, Contractor_Code, Salt.");
                         return false;
                     }
                 }
-
-                if (Gemotest == null)
+                else if (Gemotest == null)
                 {
+                    PrintInitFail("Gemotest == null после попытки инициализации.");
                     return false;
                 }
+                else
+                {
+                    PrintInitOk();
+                }
 
+                step++;
+                PrintInitStep(step, totalSteps, "Загрузка справочников и списка продуктов");
                 EnsureProductsLoaded();
                 AllProducts = GetProducts();
+                if (AllProducts == null || AllProducts.Count == 0)
+                {
+                    PrintInitFail("Список продуктов пуст. Возможно, справочники не загружены.");
+                    return false;
+                }
+                PrintInitOk();
+
+                step++;
+                PrintInitStep(step, totalSteps, "Инициализация GUI-обвязки лаборатории");
                 laboratoryGUI = new LaboratoryGemotestGUI();
                 laboratoryGUI.GetProducts(AllProducts);
+                PrintInitOk();
+
+                Console.WriteLine();
+                Console.WriteLine("╔════════════════════════════════════════════════════╗");
+                Console.WriteLine("║      Инициализация Гемотест успешно завершена      ║");
+                Console.WriteLine("╚════════════════════════════════════════════════════╝");
+                Console.WriteLine();
+
                 return true;
             }
             catch (Exception exc)
             {
-                Console.WriteLine($"Ошибка инициализации Gemotest: {exc.Message}");
+                Console.WriteLine();
+                PrintInitFail($"Ошибка инициализации Gemotest: {exc.Message}");
                 return false;
             }
         }
 
-        public bool CheckResult(Order _Order, ref ResultsCollection _Results) { _Results = null; return false; }
+
+        public bool CheckResult(Order _Order, ref ResultsCollection _Results) { 
+            _Results = null;
+            return false;
+        }
 
         public bool ExtractResult(Order _Order, ref ResultsCollection _Results) { _Results = null; return false; }
 

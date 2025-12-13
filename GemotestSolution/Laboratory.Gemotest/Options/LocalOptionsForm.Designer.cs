@@ -84,8 +84,9 @@
             this.btPdfPrinter.AutoSize = true;
             this.btPdfPrinter.Location = new System.Drawing.Point(489, 13);
             this.btPdfPrinter.Name = "btPdfPrinter";
-            this.btPdfPrinter.Size = new System.Drawing.Size(24, 23);
+            this.btPdfPrinter.Size = new System.Drawing.Size(26, 26);
             this.btPdfPrinter.TabIndex = 0;
+            this.btPdfPrinter.Text = "...";
             this.btPdfPrinter.UseVisualStyleBackColor = true;
             this.btPdfPrinter.Click += new System.EventHandler(this.btPdfPrinter_Click);
             // 
@@ -114,8 +115,9 @@
             this.btStickerPrinter.AutoSize = true;
             this.btStickerPrinter.Location = new System.Drawing.Point(489, 68);
             this.btStickerPrinter.Name = "btStickerPrinter";
-            this.btStickerPrinter.Size = new System.Drawing.Size(24, 23);
+            this.btStickerPrinter.Size = new System.Drawing.Size(26, 26);
             this.btStickerPrinter.TabIndex = 2;
+            this.btStickerPrinter.Text = "...";
             this.btStickerPrinter.UseVisualStyleBackColor = true;
             this.btStickerPrinter.Click += new System.EventHandler(this.btStickerPrinter_Click);
             // 
@@ -179,20 +181,26 @@
             // btClearPdfPrinter
             // 
             this.btClearPdfPrinter.AutoSize = true;
+            this.btClearPdfPrinter.Font = new System.Drawing.Font("Simple Bold Jut Out", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(178)));
+            this.btClearPdfPrinter.ForeColor = System.Drawing.Color.Red;
             this.btClearPdfPrinter.Location = new System.Drawing.Point(519, 13);
             this.btClearPdfPrinter.Name = "btClearPdfPrinter";
-            this.btClearPdfPrinter.Size = new System.Drawing.Size(25, 23);
+            this.btClearPdfPrinter.Size = new System.Drawing.Size(25, 29);
             this.btClearPdfPrinter.TabIndex = 1;
+            this.btClearPdfPrinter.Text = "х";
             this.btClearPdfPrinter.UseVisualStyleBackColor = true;
             this.btClearPdfPrinter.Click += new System.EventHandler(this.btClearPdfPrinter_Click);
             // 
             // btClearStickerPrinter
             // 
             this.btClearStickerPrinter.AutoSize = true;
+            this.btClearStickerPrinter.Font = new System.Drawing.Font("Simple Bold Jut Out", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(178)));
+            this.btClearStickerPrinter.ForeColor = System.Drawing.Color.Red;
             this.btClearStickerPrinter.Location = new System.Drawing.Point(519, 68);
             this.btClearStickerPrinter.Name = "btClearStickerPrinter";
-            this.btClearStickerPrinter.Size = new System.Drawing.Size(25, 23);
+            this.btClearStickerPrinter.Size = new System.Drawing.Size(25, 29);
             this.btClearStickerPrinter.TabIndex = 3;
+            this.btClearStickerPrinter.Text = "x";
             this.btClearStickerPrinter.UseVisualStyleBackColor = true;
             this.btClearStickerPrinter.Click += new System.EventHandler(this.btClearStickerPrinter_Click);
             // 
@@ -365,7 +373,7 @@
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "ЛИС «НМЦ Ситилаб» — пользовательские настройки";
+            this.Text = "Настройки печати";
             this.gbTemplate.ResumeLayout(false);
             this.panel4.ResumeLayout(false);
             this.panel4.PerformLayout();

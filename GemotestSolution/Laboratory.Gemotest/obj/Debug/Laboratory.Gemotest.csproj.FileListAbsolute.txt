@@ -75,3 +75,4 @@ C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Laboratory.Gemotest\ob
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laborato.6E2FAB54.Up2Date
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.dll
 C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\Gemotest\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.FormAdditionalPatientInfo.resources

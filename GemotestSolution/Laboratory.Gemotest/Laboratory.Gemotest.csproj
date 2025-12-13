@@ -91,7 +91,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormAdditionalPatientInfo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormAdditionalPatientInfo.Designer.cs">
+      <DependentUpon>FormAdditionalPatientInfo.cs</DependentUpon>
+    </Compile>
     <Compile Include="GemotestOrderDetails.cs" />
+    <Compile Include="GemotestOrderSender.cs" />
     <Compile Include="SourseClass\Dictionaries.cs" />
     <Compile Include="LaboratoryGemotest.cs" />
     <Compile Include="LaboratoryGemotestGUI.cs" />
@@ -114,6 +121,9 @@
     <Compile Include="SourseClass\ProductGemotest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="FormAdditionalPatientInfo.resx">
+      <DependentUpon>FormAdditionalPatientInfo.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Options\LocalOptionsForm.resx">
       <DependentUpon>LocalOptionsForm.cs</DependentUpon>
     </EmbeddedResource>

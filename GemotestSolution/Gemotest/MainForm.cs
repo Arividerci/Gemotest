@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -18,7 +21,17 @@ namespace Gemotest
         private static extern bool AllocConsole();
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeConsole();
+        private static extern bool FreeConsole(); 
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_HIDE = 0;
+        private const int SW_SHOW = 5;
+
 
         private LaboratoryGemotest laboratoryGemotest;
         private string SystemOptions = ""; 
@@ -30,9 +43,9 @@ namespace Gemotest
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | (SecurityProtocolType)3072;
             InitializeComponent();
-            AllocConsole();
-            
+
             laboratoryGemotest = new LaboratoryGemotest();
+
         }
 
 
@@ -86,47 +99,69 @@ namespace Gemotest
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            AllocConsole();                
+            var ok = laboratoryGemotest.Init();
 
-            laboratoryGemotest.Init();
-            FreeConsole();
+            if (!ok)
+                MessageBox.Show("Ошибка инициализации Гемотест. Подробности были в консоли.");
+
         }
 
-        private void CheckResult_button_Click(object sender, EventArgs e)
+        private void CreateOrder_button_Click(object sender, EventArgs e)
         {
             if (_currentOrder == null)
             {
                 _currentOrder = new Order(laboratoryGemotest.CreateOrderDetail());
             }
 
-            _currentOrder.Patient.Surname = textBoxSurname.Text;
-            _currentOrder.Patient.Name = textBoxName.Text;
-            _currentOrder.Patient.Patronimic = textBoxPatronymic.Text;
-            _currentOrder.Patient.Birthday = dateTimePickerBirthdate.Value.Date;
-            _currentOrder.Patient.Sex = (comboBoxSex.SelectedIndex == 1)
-                ? Sex.Female
-                : Sex.Male;
-
-            // дальше твой тестовый код добавления услуг — можешь оставить как есть
-            _currentOrder.Items.Clear();
-            _currentOrder.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[130], 1, 1));
-            _currentOrder.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1328], 1, 1));
-            _currentOrder.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1128], 1, 1));
-            _currentOrder.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1828], 1, 1));
-            _currentOrder.Items.Add(new OrderItem((SiMed.Laboratory.Product)laboratoryGemotest.AllProducts[1938], 1, 1));
-
             laboratoryGemotest.CreateOrder(_currentOrder);
         }
 
         private void включитьКонсольToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Пытаемся выделить/подключить консоль к текущему процессу
             AllocConsole();
+            var h = GetConsoleWindow();
+            if (h != IntPtr.Zero)
+                ShowWindow(h, SW_SHOW);
         }
 
         private void выключитьКонсольToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Отсоединяемся от консоли
-            FreeConsole();
+            var h = GetConsoleWindow();
+            if (h != IntPtr.Zero)
+                ShowWindow(h, SW_HIDE);
+
+            Console.SetOut(TextWriter.Null);
+            Console.SetError(TextWriter.Null);
+        }
+
+        private void CheckResult_button_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string orderNum = textBoxOrderNum.Text.Trim();
+
+                var opts = laboratoryGemotest.Options; 
+
+                var client = new GemotestAnalysisResultClient(
+                    opts.UrlAdress,
+                    opts.Contractor_Code,
+                    opts.Salt,
+                    opts.Login,
+                    opts.Password
+                );
+
+                string xml = client.GetAnalysisResultRaw(orderNum);
+
+                var parsed = GemotestAnalysisResultParser.Parse(xml);
+
+                var form = new FormGemotestResult(parsed);
+                form.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Проверить результат", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
     }

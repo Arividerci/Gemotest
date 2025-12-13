@@ -21,8 +21,6 @@ namespace Laboratory.Gemotest
 
         private void ConfigureGrids()
         {
-            // Чтобы имена колонок были нормальные — задаём их кодом,
-            // а внешний вид (шрифты/ширины) оставляем дизайнеру.
             gridCl.AutoGenerateColumns = false;
             gridCl.Columns.Clear();
 
@@ -54,7 +52,6 @@ namespace Laboratory.Gemotest
             txtPdf.Text = _result.PdfUrl ?? "";
             btnSavePdf.Enabled = !string.IsNullOrWhiteSpace(_result.PdfUrl);
 
-            // Группировка: одинаковый раздел показываем только в первой строке
             var ordered = _result.ClResults
                 .OrderBy(x => x.SectionName)
                 .ThenBy(x => x.TestRusName)
@@ -101,7 +98,6 @@ namespace Laboratory.Gemotest
 
         private static string MapOrderStatus(int code)
         {
-            // Без официальной таблицы — не выдумываем.
             switch (code)
             {
                 case 0: return "Нет результата";

@@ -60,7 +60,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                     ? "SiMed_" + DateTime.Now.ToString("yyyyMMddHHmmss")
                     : order.Number;
 
-                string orderNum = string.Empty; // для нового заказа
+                string orderNum = string.Empty;
 
                 DateTime birthDate = patient.Birthday == default(DateTime)
                     ? DateTime.Today
@@ -106,11 +106,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                     throw new Exception("Ошибка create_order: " + errorText);
                 }
 
-                // при желании можно вытащить order_num из ответа и сохранить в details
-                // var orderNumNodes = doc.GetElementsByTagName("order_num");
-                // if (orderNumNodes.Count > 0)
-                //     details.OrderNum = orderNumNodes[0].InnerText;
-
                 return true;
             }
             catch (Exception ex)
@@ -120,7 +115,6 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
-        // ---------- внутренности ----------
 
         private class SoapServiceItem
         {
@@ -130,12 +124,6 @@ namespace Laboratory.Gemotest.GemotestRequests
             public string TransportId { get; set; }
         }
 
-        /// <summary>
-        /// Собираем список услуг для блока &lt;services&gt;.
-        /// - Обычные услуги (service_type 0/1) – по Directory.
-        /// - Маркетинговый комплекс (service_type 2) – разворачиваем по MarketingComplexComposition.
-        /// - Типы 3 и 4 игнорируем.
-        /// </summary>
         private List<SoapServiceItem> BuildServices(GemotestOrderDetail details)
         {
             var result = new List<SoapServiceItem>();
@@ -152,11 +140,9 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var svc = Dictionaries.Directory?.FirstOrDefault(s => s.id == prod.ProductId);
                 int serviceType = svc?.service_type ?? 0;
 
-                // 3 и 4 — вообще не отправляем
                 if (serviceType == 3 || serviceType == 4)
                     continue;
 
-                // ----- маркетинговый комплекс (service_type == 2) -----
                 if (serviceType == 2 && Dictionaries.MarketingComplexComposition != null)
                 {
                     var complexItems = Dictionaries.MarketingComplexComposition
@@ -168,7 +154,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                         if (string.IsNullOrEmpty(item.service_id))
                             continue;
 
-                        // biomaterial / localization / transport берём через sample_services + samples
                         var sampleInfo = ResolveSampleInfoForService(
                             item.service_id,
                             item.biomaterial_id
@@ -186,10 +171,9 @@ namespace Laboratory.Gemotest.GemotestRequests
                     continue;
                 }
 
-                // ----- обычная услуга (service_type 0 или 1) -----
                 var sampleInfoForSimple = ResolveSampleInfoForService(
                     prod.ProductId,
-                    null   // биоматериал из комплекса тут не нужен
+                    null   
                 );
 
                 result.Add(new SoapServiceItem
@@ -212,7 +196,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                 if (string.IsNullOrEmpty(serviceId))
                     return res;
 
-                // 1) ServiceParameters (точное совпадение service_id + biomaterial_id, если передали biomaterialFromComplex)
                 var param = Dictionaries.ServiceParameters?
                     .FirstOrDefault(p =>
                         p.service_id == serviceId &&
@@ -227,7 +210,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                         res.TransportId = param.transport_id;
                 }
 
-                // 2) Фоллбек: Directory
                 var svc = Dictionaries.Directory?.FirstOrDefault(s => s.id == serviceId);
                 if (svc != null)
                 {
@@ -244,11 +226,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                 return res;
             }
 
-
-        /// <summary>
-        /// hash = sha1(ext_num + order_num + contractor + surname + birthday(yyyy-MM-dd) + salt)
-        /// полностью совпадает с примером SiMed1 / Тест / 1998-04-02.
-        /// </summary>
         private string BuildCreateOrderHash(
             string extNum,
             string orderNum,
@@ -280,13 +257,13 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
         private string BuildCreateOrderEnvelope(
-    string extNum,
-    string orderNum,
-    string contractor,
-    string hash,
-    string comment,
-    Patient patient,
-    IList<SoapServiceItem> services)
+            string extNum,
+            string orderNum,
+            string contractor,
+            string hash,
+            string comment,
+            Patient patient,
+            IList<SoapServiceItem> services)
         {
             int count = services?.Count ?? 0;
 
@@ -317,24 +294,24 @@ namespace Laboratory.Gemotest.GemotestRequests
             sb.Append("<params xsi:type=\"urn:order\">");
 
             sb.Append("<ext_num xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(extNum ?? string.Empty))
-              .Append("</ext_num>");
+                .Append(SecurityElement.Escape(extNum ?? string.Empty))
+                .Append("</ext_num>");
 
             sb.Append("<order_num xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(orderNum ?? string.Empty))
-              .Append("</order_num>");
+                .Append(SecurityElement.Escape(orderNum ?? string.Empty))
+                .Append("</order_num>");
 
             sb.Append("<comment xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(comment ?? string.Empty))
-              .Append("</comment>");
+                .Append(SecurityElement.Escape(comment ?? string.Empty))
+                .Append("</comment>");
 
             sb.Append("<contractor xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(contractor ?? string.Empty))
-              .Append("</contractor>");
+                .Append(SecurityElement.Escape(contractor ?? string.Empty))
+                .Append("</contractor>");
 
             sb.Append("<hash xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(hash ?? string.Empty))
-              .Append("</hash>");
+                .Append(SecurityElement.Escape(hash ?? string.Empty))
+                .Append("</hash>");
 
             sb.Append("<registered xsi:type=\"xsd:boolean\">true</registered>");
             sb.Append("<order_status xsi:type=\"xsd:integer\">1</order_status>");
@@ -343,31 +320,31 @@ namespace Laboratory.Gemotest.GemotestRequests
             sb.Append("<patient xsi:type=\"urn:patient\">");
 
             sb.Append("<surname xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(surname))
-              .Append("</surname>");
+                .Append(SecurityElement.Escape(surname))
+                .Append("</surname>");
 
             sb.Append("<firstname xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(firstname))
-              .Append("</firstname>");
+                .Append(SecurityElement.Escape(firstname))
+                .Append("</firstname>");
 
             sb.Append("<middlename xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(middlename))
-              .Append("</middlename>");
+                .Append(SecurityElement.Escape(middlename))
+                .Append("</middlename>");
 
             sb.Append("<birthdate xsi:type=\"xsd:date\">")
-              .Append(birthDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-              .Append("</birthdate>");
+                .Append(birthDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .Append("</birthdate>");
 
             sb.Append("<gender xsi:type=\"xsd:int\">")
-              .Append(gender)
-              .Append("</gender>");
+                .Append(gender)
+                .Append("</gender>");
 
             sb.Append("</patient>");
 
             // -------- services ----------
             sb.Append("<services xsi:type=\"urn:servicesArray\" soapenc:arrayType=\"urn:services[")
-              .Append(count)
-              .Append("]\">");
+                .Append(count)
+                .Append("]\">");
 
             if (services != null)
             {
@@ -379,20 +356,20 @@ namespace Laboratory.Gemotest.GemotestRequests
                     sb.Append("<item>");
 
                     sb.Append("<id>")
-                      .Append(SecurityElement.Escape(s.Id))
-                      .Append("</id>");
+                        .Append(SecurityElement.Escape(s.Id))
+                        .Append("</id>");
 
                     sb.Append("<biomaterial_id>")
-                      .Append(SecurityElement.Escape(s.BiomaterialId ?? string.Empty))
-                      .Append("</biomaterial_id>");
+                        .Append(SecurityElement.Escape(s.BiomaterialId ?? string.Empty))
+                        .Append("</biomaterial_id>");
 
                     sb.Append("<localization_id>")
-                      .Append(SecurityElement.Escape(s.LocalizationId ?? string.Empty))
-                      .Append("</localization_id>");
+                        .Append(SecurityElement.Escape(s.LocalizationId ?? string.Empty))
+                        .Append("</localization_id>");
 
                     sb.Append("<transport_id>")
-                      .Append(SecurityElement.Escape(s.TransportId ?? string.Empty))
-                      .Append("</transport_id>");
+                        .Append(SecurityElement.Escape(s.TransportId ?? string.Empty))
+                        .Append("</transport_id>");
 
                     sb.Append("</item>");
                 }
@@ -409,7 +386,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
         private string SendSoapRequest(string xmlBody)
         {
-            // --- выводим запрос в консоль для анализа ---
             Console.WriteLine("========== Gemotest create_order REQUEST ==========");
             Console.WriteLine(xmlBody);
             Console.WriteLine("==================================================");
@@ -418,10 +394,8 @@ namespace Laboratory.Gemotest.GemotestRequests
             request.Method = "POST";
             request.ContentType = "text/xml; charset=utf-8";
 
-            // SOAPAction – как для create_order
             request.Headers["SOAPAction"] = "\"urn:OdoctorControllerwsdl#create_order\"";
 
-            // HTTP Basic Auth: login:password
             string credentials = $"{_login}:{_password}";
             string authHeader = Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
             request.Headers["Authorization"] = "Basic " + authHeader;
@@ -441,7 +415,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                 {
                     string responseText = reader.ReadToEnd();
 
-                    // заодно можно выводить и ответ
                     Console.WriteLine("========== Gemotest create_order RESPONSE ==========");
                     Console.WriteLine(responseText);
                     Console.WriteLine("===================================================");

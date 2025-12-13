@@ -109,7 +109,7 @@ namespace Laboratory.Gemotest.SourseClass
                     var loc = Dictionaries.Localization.FirstOrDefault(l => l.id == item.localization_id);
                     if (loc != null && !Localization.Any(l => l.id == loc.id)) Localization.Add(loc);
                 }
-                // Аналогично для transport_id
+                
             }
         }
 
@@ -137,7 +137,6 @@ namespace Laboratory.Gemotest.SourseClass
             Console.WriteLine($" Type: {Type}, ServiceType: {ServiceType}, IsBlocked: {IsBlocked}");
             Console.WriteLine($" Price: {Price}, IncreasePeriod: {IncreasePeriod}");
 
-            // Вывод локализации
             Console.WriteLine($" Локализации ({Localization.Count}):");
             if (Localization.Any())
             {
@@ -153,7 +152,6 @@ namespace Laboratory.Gemotest.SourseClass
                 Console.WriteLine("  Нет локализаций");
             }
 
-            // Вывод биоматериалов
             Console.WriteLine($" Биоматериалы ({BioMaterials.Count}):");
             if (BioMaterials.Any())
             {
@@ -171,7 +169,6 @@ namespace Laboratory.Gemotest.SourseClass
                 Console.WriteLine("  Нет биоматериалов");
             }
 
-            // Вывод транспорта
             Console.WriteLine($" Транспорты ({Transports.Count}):");
             if (Transports.Any())
             {
@@ -193,7 +190,7 @@ namespace Laboratory.Gemotest.SourseClass
         public static void PrintAllProductsRelatedData(List<ProductGemotest> products)
         {
             Console.WriteLine("=== Все продукты и их связанные данные (Type 0/1/2) ===");
-            var relevant = products.Where(p => p.ServiceType != 3 && !p.IsBlocked).Take(10).ToList(); // Только релевантные типы
+            var relevant = products.Where(p => p.ServiceType != 3 && !p.IsBlocked).Take(10).ToList(); 
             foreach (var p in relevant)
             {
                 p.PrintRelatedData();

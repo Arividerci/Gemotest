@@ -176,8 +176,6 @@ namespace Laboratory.Gemotest
             try
             {
                 GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
-                //если при открытии формы заказа была возможность редактирования, то детализацию по биоматериалам нужно сохранить в OrderDetail
-                // сохранение выбранного прайс листа
                 if (_Model.PriceListSelected != null)
                 {
                     string[] args = _Model.PriceListSelected.Id.Split('_');
@@ -193,7 +191,6 @@ namespace Laboratory.Gemotest
                         details.PriceList = priceListFind;*/
                 }
 
-                // сохранение информации о продуктах
                 details.Products.Clear();
                 foreach (var productInfo in _Model.ProductsInfo)
                 {
@@ -208,7 +205,6 @@ namespace Laboratory.Gemotest
 
                 foreach (var biom in details.BioMaterials)
                 {
-                    // выбранные и обязательные биоматериалы
                     biom.Chosen.Clear();
                     List<ProductInfoForGUI> productsFind = _Model.ProductsInfo.FindAll(p => p.BiomaterialGroups.Find(b => b.BiomaterialsSelected.Find(bs => bs.BiomaterialId == biom.Id.ToString()) != null) != null);
                     foreach (ProductInfoForGUI productInfo in productsFind)
@@ -220,7 +216,6 @@ namespace Laboratory.Gemotest
                             biom.Chosen.Add(orderProductIndex);
                     }
 
-                    // биоматериалы, доступные к выбору, но не выбранные
                     biom.Another.Clear();
                     productsFind = _Model.ProductsInfo.FindAll(p => p.BiomaterialGroups.Find(b => b.BiomaterialsSelected.Find(bs => bs.BiomaterialId == biom.Id.ToString()) == null && b.Biomaterials.Find(ba => ba.BiomaterialId == biom.Id.ToString()) != null) != null);
                     foreach (ProductInfoForGUI productInfo in productsFind)
@@ -230,7 +225,6 @@ namespace Laboratory.Gemotest
                     }
                 }
 
-                // сохранение доп. полей
                 foreach (var field in _Model.Fields)
                 {
                     GemotestDetail detailFind = details.Details.Find(x => GetNormalizedFieldId(x.ID, x.isStdField) == field.Id);
@@ -320,7 +314,6 @@ namespace Laboratory.Gemotest
                     List<ProductInfoForGUI> products = new List<ProductInfoForGUI>();
                     List<ProductGroupInfoForGUI> productGroups = new List<ProductGroupInfoForGUI>();
 
-                    // формируем список услуг для выбора, отбрасывая ненужные типы (3 и 4)
                     foreach (var prod in AllProducts)
                     {
                         var svc = Dictionaries.Directory?.FirstOrDefault(s => s.id == prod.ID);
@@ -346,10 +339,6 @@ namespace Laboratory.Gemotest
                     if (productNew == null)
                         return false;
 
-                    // маркетинговый комплекс (service_type == 2) теперь НЕ разворачиваем,
-                    // НЕ спрашиваем IRON/FERRITIN – просто добавляем сам комплекс
-
-                    // Проверка на дубликат услуги в заказе
                     if (details.Products != null &&
                         details.Products.Any(p => string.Equals(p.ProductId, productNew.Id, StringComparison.OrdinalIgnoreCase)))
                     {
@@ -376,10 +365,8 @@ namespace Laboratory.Gemotest
 
                     details.Products.Add(productInfo);
 
-                    // авто-добавление зависимых услуг
                     ApplyAutoInsertServices(details, _OrderModel);
 
-                    // пересчитать биоматериалы (для маркетингового комплекса будут свои, все отмечены)
                     details.AddBiomaterialsFromProducts();
                     RebuildBiomaterialGroups(details, _OrderModel);
 
@@ -432,11 +419,9 @@ namespace Laboratory.Gemotest
                 if (details.Products == null || details.Products.Count == 0)
                     throw new InvalidOperationException("В заказе нет ни одной услуги.");
 
-                // гарантируем, что глобальные опции инициализированы
                 if (globalOptions == null)
                     globalOptions = new OptionsGemotest();
 
-                // класс, который собирает XML и делает SOAP-запрос (из отдельного файла GemotestOrderSender.cs)
                 var sender = new GemotestOrderSender(
                     globalOptions.UrlAdress,        
                     globalOptions.Contractor_Code,  
@@ -460,8 +445,7 @@ namespace Laboratory.Gemotest
                     return false;
                 }
 
-                // если create_order отработал без ошибок – помечаем заказ подготовленным
-                order.State = OrderState.Prepared;
+                order.State = OrderState.Sended;
                 return true;
             }
             catch (Exception ex)
@@ -540,7 +524,6 @@ namespace Laboratory.Gemotest
             return chosen ?? selectedProduct;
         }
 */
-
         private void RebuildBiomaterialGroups(GemotestOrderDetail details, OrderModelForGUI model)
         {
             if (details == null || model == null || model.ProductsInfo == null)
@@ -659,9 +642,6 @@ namespace Laboratory.Gemotest
                     needPassport = true;
                 if (svc.is_address_required)
                     needAddress = true;
-
-                // если есть флаг по СНИЛС – сюда
-                // if (svc.is_snils_required) needSnils = true;
             }
 
             if (!needPassport && !needAddress && !needSnils)
@@ -676,104 +656,6 @@ namespace Laboratory.Gemotest
 
             return true;
         }
-
-        private bool PrepareOrderForSend(Order _Order)
-        {
-            LastException = null;
-            try
-            {
-                if (_Order == null)
-                    throw new InvalidOperationException("Заказ (_Order) не задан.");
-
-                var details = _Order.OrderDetail as GemotestOrderDetail;
-                if (details == null)
-                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
-
-                if (details.Products == null || details.Products.Count == 0)
-                    throw new InvalidOperationException("В заказе нет ни одной услуги.");
-
-                // --- гарантируем, что options не null ---
-                if (globalOptions == null)
-                    globalOptions = new OptionsGemotest();      // твой класс с UrlAdress, Contractor_Code, Salt и т.д.
-
-                if (localOptions == null)
-                    localOptions = new LocalOptionsGemotest();  // если такого класса нет – убери эту строчку и проверки ниже
-
-                // --- печать бланка / стикеров как было ---
-                if (localOptions.PrintBlankAtOnce)
-                {
-                    ResultsCollection results = null;
-                    PrintLaboratoryDocument(
-                        _Order,
-                        ref results,
-                        new DocumentInfoForGUI() { DocType = LaboratoryPrintDocumentType.Blank },
-                        false);
-                }
-
-                if (localOptions.PrintStikersAtOnce)
-                {
-                    var samples = new List<SampleInfoForGUI>();
-
-                    string orderNumberNormalized = _Order.Number ?? string.Empty;
-                    while (orderNumberNormalized.Length < 9)
-                        orderNumberNormalized = '0' + orderNumberNormalized;
-
-                    if (details.BioMaterials != null)
-                    {
-                        foreach (GemotestBioMaterial cLB in details.BioMaterials)
-                        {
-                            if (cLB != null &&
-                                (cLB.Chosen.Count > 0 || cLB.Mandatory.Count > 0))
-                            {
-                                samples.Add(new SampleInfoForGUI()
-                                {
-                                    // заполни по своему формату этикеток
-                                });
-                            }
-                        }
-                    }
-
-                    PrintStikers(_Order, samples);
-                }
-
-                // --- отправка в отдельный класс ---
-                var sender = new GemotestOrderSender(
-                    globalOptions.UrlAdress,
-                    globalOptions.Contractor_Code,
-                    globalOptions.Salt,
-                    globalOptions.Login,
-                    globalOptions.Password
-                );
-
-                string errorMessage;
-                if (!sender.CreateOrder(_Order, out errorMessage))
-                {
-                    if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        MessageBox.Show(
-                            errorMessage,
-                            "Ошибка отправки заказа в Гемотест",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
-                    }
-                    return false;
-                }
-
-                _Order.State = OrderState.Prepared;
-                return true;
-            }
-            catch (Exception exc)
-            {
-                LastException = exc;
-                MessageBox.Show(
-                    exc.Message,
-                    "Ошибка подготовки заказа",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-                return false;
-            }
-        }
-
 
         /*private bool PrepareOrderForSend(Order _Order)
         {
@@ -832,14 +714,6 @@ namespace Laboratory.Gemotest
 
         public bool PrintStikers(Order _Order, List<SampleInfoForGUI> _SelectedSamples) { return false; }
 
-        /// <summary>
-        /// Автоматически добавляет услуги по справочнику service_auto_insert.
-        /// Для каждой услуги в заказе:
-        ///   если есть запись в Dictionaries.ServiceAutoInsert (service_id == ProductId),
-        ///   и auto_service_id ещё нет в заказе,
-        ///   и auto_service_id есть в AllProducts (услуга доступна клинике),
-        ///   то добавляем её в details.Products и _Model.ProductsInfo.
-        /// </summary>
         private void ApplyAutoInsertServices(GemotestOrderDetail details, OrderModelForGUI model)
         {
             if (details == null || details.Products == null)

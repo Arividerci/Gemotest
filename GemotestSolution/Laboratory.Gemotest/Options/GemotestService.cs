@@ -26,10 +26,10 @@ namespace Laboratory.Gemotest.Options
         private string _url = "https://api.gemotest.ru/odoctor/odoctor/index/ws/1";
         private int chunk;
         private int size;
-        public string filePath =
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "Options");
+        public string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "New") + Path.DirectorySeparatorChar;
 
+       
         public GemotestService(string url, string login, string password, string contractor, string contractor_code, string salt)
         {
             if (url == null) throw new ArgumentNullException("url");
@@ -41,7 +41,7 @@ namespace Laboratory.Gemotest.Options
             _salt = salt;
 
             filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Симплекс", "СиМед - Клиника", "GemotestDictionaries", contractor_code) + Path.DirectorySeparatorChar;
+                "Симплекс", "СиМед - Клиника", "GemotestDictionaries", contractor_code)  + Path.DirectorySeparatorChar;
         }
 
 
@@ -138,87 +138,71 @@ namespace Laboratory.Gemotest.Options
                 return false;
             }
         }
-
-        public void PrintS()
-        {
-            DictionarySamplesServices.PrintToConsole(Dictionaries.SamplesServices, 100);
-        }
         
         public void get_biomaterials()
         {
             string response = RequestToGemotest("get_biomaterials");
             CreateNewDictionaries(response, "Biomaterials");
-            Console.WriteLine("Справочник биоматериалов загружен (Ok 1)");
         }
 
         public void get_transport()
         {
             string response = RequestToGemotest("get_transport");
             CreateNewDictionaries(response, "Transport");
-            Console.WriteLine("Справочник транспортных сред загружен (Ok 2)");
         }
 
         public void get_localization()
         {
             string response = RequestToGemotest("get_localization");
             CreateNewDictionaries(response, "Localization");
-            Console.WriteLine("Справочник локализаций загружен (Ok 3)");
         }
 
         public void get_service_group()
         {
             string response = RequestToGemotest("get_service_group");
             CreateNewDictionaries(response, "Service_group");
-            Console.WriteLine("Справочник групп услуг загружен (Ok 4)");
         }
 
         public void get_service_parameters()
         {
             string response = RequestToGemotest("get_service_parameters");
             CreateNewDictionaries(response, "Service_parameters");
-            Console.WriteLine("Справочник параметров услуг загружен (Ok 5)");
         }
 
         public void get_directory()
         {
             string response = RequestToGemotest("get_directory");
             CreateNewDictionaries(response, "Directory");
-            Console.WriteLine("Справочник услуг загружен (Ok 6)");
         }
 
         public void get_tests()
         {
             string response = RequestToGemotest("get_tests");
             CreateNewDictionaries(response, "Tests");
-            Console.WriteLine("Справочник тестов загружен (Ok 7)");
         }
 
         public void get_samples_services()
         {
             string response = RequestToGemotest("get_samples_services");
             CreateNewDictionaries(response, "Samples_services");
-            Console.WriteLine("Справочник проб-услуг загружен (Ok 8)");
         }
 
         public void get_samples()
         {
             string response = RequestToGemotest("get_samples");
             CreateNewDictionaries(response, "Samples");
-            Console.WriteLine("Справочник проб загружен (Ok 9)");
         }
 
         public void get_processing_rules()
         {
             string response = RequestToGemotest("get_processing_rules");
             CreateNewDictionaries(response, "Processing_rules");
-            Console.WriteLine("Справочник правил обработки загружен (Ok 10)");
         }
 
         /*public void get_services_all_interlocks()
         {
             string response = RequestToGemotest("get_services_all_interlocks");
             CreateNewDictionaries(response, "Services_all_interlocks");
-            Console.WriteLine("Справочник правил взаимоблокирующихся услуг загружен (Ok 11)");
         }*/
         public void get_services_all_interlocks()
         {
@@ -346,7 +330,6 @@ namespace Laboratory.Gemotest.Options
 
                 string fullResponse = fullDoc.OuterXml;
                 CreateNewDictionaries(fullResponse, "Services_all_interlocks");
-                Console.WriteLine("Справочник правил взаимоблокирующихся услуг загружен (Ok 11)");
 
                 this.chunk = 0;
                 this.size = 0;
@@ -363,28 +346,24 @@ namespace Laboratory.Gemotest.Options
         {
             string response = RequestToGemotest("get_marketing_complex_composition");
             CreateNewDictionaries(response, "Marketing_complex_composition");
-            Console.WriteLine("Справочник маркетинговых комплексов загружен (Ok 12)");
         }
 
         public void get_services_group_analogs()
         {
             string response = RequestToGemotest("get_services_group_analogs");
             CreateNewDictionaries(response, "Services_group_analogs");
-            Console.WriteLine("Справочник групп услуг-аналогов загружен (Ok 13)");
         }
 
         public void get_service_auto_insert()
         {
             string response = RequestToGemotest("get_service_auto_insert");
             CreateNewDictionaries(response, "Service_auto_insert");
-            Console.WriteLine("Справочник автодобавляемых услуг загружен (Ok 14)");
         }
 
         public void get_services_supplementals()
         {
             string response = RequestToGemotest("get_services_supplementals");
             CreateNewDictionaries(response, "Services_supplementals");
-            Console.WriteLine("Справочник дополнительных тестов для услуг загружен (Ok 15)");
         }
 
         private bool VerifyAndReplaceDictionaries()
@@ -445,13 +424,10 @@ namespace Laboratory.Gemotest.Options
                 UpdateDictionariesListFile();
 
                 File.WriteAllText(Path.Combine(filePath, "last_update.txt"), DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-
-                Console.WriteLine("Все справочники успешно обновлены.");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при проверке/замене справочников: {ex.Message}");
                 CleanupNewFiles();
                 return false;
             }

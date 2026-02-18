@@ -270,6 +270,24 @@ namespace Laboratory.Gemotest.SourseClass
                 }
             }
 
+            for (int i = 0; i < Products.Count; i++)
+            {
+                // Если уже есть обязательный или выбранный – не трогаем
+                bool alreadyChosen = BioMaterials.Any(b =>
+                    b.Chosen.Contains(i) || b.Mandatory.Contains(i));
+
+                if (alreadyChosen)
+                    continue;
+
+                // Берём первый доступный вариант из Another
+                var candidate = BioMaterials.FirstOrDefault(b => b.Another.Contains(i));
+                if (candidate != null)
+                {
+                    candidate.Another.Remove(i);
+                    candidate.Chosen.Add(i);
+                }
+            }
+
             BioMaterials = BioMaterials
                 .Where(b => b.Chosen.Count > 0 || b.Another.Count > 0 || b.Mandatory.Count > 0)
                 .ToList();

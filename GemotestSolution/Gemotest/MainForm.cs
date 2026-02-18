@@ -33,12 +33,11 @@ namespace Gemotest
         private const int SW_HIDE = 0;
         private const int SW_SHOW = 5;
 
-
         private LaboratoryGemotest laboratoryGemotest;
-        private string SystemOptions = ""; 
-        private string LocalOptions = "";
+        private string SystemOptions = null;
+        private string LocalOptions = null;
         private Order _currentOrder;
-        public OptionsGemotest Options; 
+        public OptionsGemotest Options;
 
         public MainForm()
         {
@@ -51,24 +50,16 @@ namespace Gemotest
 
         private void GemotestOptions_toolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string localOptions = LocalOptions;
-            if (laboratoryGemotest.ShowLocalOptions(ref localOptions))
-            {
-                laboratoryGemotest.SetOptions(SystemOptions, localOptions);
-                LocalOptions = localOptions;
-            }
+            string tmp = SystemOptions;
+            if (laboratoryGemotest.ShowSystemOptions(ref tmp))
+                SystemOptions = tmp;
         }
 
         private void SystemOptions_toolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string systemOptions = SystemOptions;
-            if (laboratoryGemotest.ShowSystemOptions(ref systemOptions))
-            {
-                laboratoryGemotest.SetOptions(systemOptions, LocalOptions); 
-                laboratoryGemotest.SetOptions(systemOptions, LocalOptions); 
-                SystemOptions = systemOptions;
-                MessageBox.Show("Системные опции сохранены. Теперь можно загрузить продукты.", "Успех");
-            }
+            string tmp = LocalOptions;
+            if (laboratoryGemotest.ShowLocalOptions(ref tmp))
+                LocalOptions = tmp;
         }
 
         private void LoadDictionaries_ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -100,7 +91,9 @@ namespace Gemotest
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            AllocConsole();                
+            laboratoryGemotest = new LaboratoryGemotest();
+            laboratoryGemotest.SetOptions(SystemOptions, LocalOptions);
+            
             var ok = laboratoryGemotest.Init();
 
             if (!ok)
@@ -110,6 +103,7 @@ namespace Gemotest
 
         private void CreateOrder_button_Click(object sender, EventArgs e)
         {
+            
             if (_currentOrder == null)
                 _currentOrder = new Order(laboratoryGemotest.CreateOrderDetail());
 
@@ -360,6 +354,27 @@ namespace Gemotest
                 p.SetValue(dst, val, null);
             }
             catch { }
+        }
+
+        private void bInit_Click(object sender, EventArgs e)
+        {
+            laboratoryGemotest = new LaboratoryGemotest();
+            laboratoryGemotest.SetOptions(SystemOptions, LocalOptions);
+            laboratoryGemotest.Init();
+        }
+
+        private void bSystem_Click(object sender, EventArgs e)
+        {
+            string tmp = SystemOptions; 
+            if (laboratoryGemotest.ShowSystemOptions(ref tmp))
+                SystemOptions = tmp;
+        }
+
+        private void bLocal_Click(object sender, EventArgs e)
+        {
+            string tmp = LocalOptions; 
+            if (laboratoryGemotest.ShowLocalOptions(ref tmp))
+                LocalOptions = tmp;
         }
 
     }

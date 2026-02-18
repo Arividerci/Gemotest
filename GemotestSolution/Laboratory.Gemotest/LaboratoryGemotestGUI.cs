@@ -11,12 +11,21 @@ using Laboratory.Gemotest.GemotestRequests;
 
 namespace Laboratory.Gemotest
 {
-    internal class LaboratoryGemotestGUI : ILaboratoryGUI
+    public class LaboratoryGemotestGUI : ILaboratoryGUI
     {
         private LaboratoryGemotest laboratory;
         private LocalOptionsGemotest localOptions;
         private OptionsGemotest globalOptions;
         private ProductsCollection AllProducts;
+
+        public bool SetAssignedModules(LaboratoryGemotest lab, ProductsCollection products, LocalOptionsGemotest local, OptionsGemotest global)
+        {
+            laboratory = lab;
+            localOptions = local;
+            globalOptions = global;
+            AllProducts = products;
+            return true;
+        }
 
         private Exception lastException { get; set; }
         private Exception LastException
@@ -29,8 +38,6 @@ namespace Laboratory.Gemotest
                 lastException = value;
             }
         }
-
-        public void GetProducts(ProductsCollection products) => AllProducts = products;
 
         public Exception GetLastException() => LastException;
 
@@ -69,8 +76,6 @@ namespace Laboratory.Gemotest
                     _Model.PriceLists.Add(new PriceListForGUI() { Id = $"", Name = "" });
                     _Model.PriceListSelected = _Model.PriceLists[0];
                 }
-
-                // Продукты -> модель GUI
                 foreach (var product in details.Products)
                 {
                     var p = new ProductInfoForGUI
@@ -81,14 +86,10 @@ namespace Laboratory.Gemotest
                         Name = product.ProductName,
                         ProductGroupGuid = null
                     };
-
-                    // Печать мета-информации по услуге (тип/вид)
                     PrintServiceMetaToConsole(p.Id);
 
                     _Model.ProductsInfo.Add(p);
                 }
-
-                // Пересобираем группы биоматериалов корректно (выбор 1 био для обычных, все био для МК)
                 RebuildBiomaterialGroups(details, _Model);
 
                 return true;
@@ -121,7 +122,6 @@ namespace Laboratory.Gemotest
                     });
                 }
 
-                // Важное место: перенос выбора био из GUI -> details.BioMaterials
                 foreach (var biom in details.BioMaterials)
                 {
                     biom.Chosen.Clear();

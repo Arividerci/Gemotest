@@ -26,7 +26,18 @@ namespace Laboratory.Gemotest
         public LocalOptionsGemotest LocalOptions { get; set; }
         public OptionsGemotest Options { get; set; }
 
-        private LaboratoryGemotestGUI laboratoryGUI;
+        private Exception last_exception = new Exception("неизвестная ошибка");
+
+        private LaboratoryGemotestGUI _laboratoryGUI;
+        public LaboratoryGemotestGUI laboratoryGUI
+        {
+            get { return _laboratoryGUI; }
+        }
+
+        public bool IsInitialized
+        {
+            get { return _laboratoryGUI != null; }
+        }
 
         public LaboratoryType GetLaboratoryType()
         {
@@ -34,6 +45,7 @@ namespace Laboratory.Gemotest
             
         }
 
+       
         private void EnsureProductsLoaded()
         {
             if (ProductsGemotest != null) return;
@@ -117,44 +129,7 @@ namespace Laboratory.Gemotest
             return null; 
         }
 
-        private void PrintInitHeader()
-        {
-            try
-            {
-                Console.OutputEncoding = Encoding.UTF8;
-            }
-            catch
-            {
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("╔════════════════════════════════════════════════════╗");
-            Console.WriteLine("║        Гемотест: инициализация модуля ЛИС         ║");
-            Console.WriteLine("╚════════════════════════════════════════════════════╝");
-        }
-
-        private void PrintInitStep(int step, int total, string text)
-        {
-            string prefix = $"[{step}/{total}]".PadRight(8);
-            Console.WriteLine();
-            Console.WriteLine($"{prefix}{text}...");
-        }
-
-        private void PrintInitOk()
-        {
-            Console.WriteLine("        → [OK]");
-        }
-
-        private void PrintInitWarn(string message)
-        {
-            Console.WriteLine($"        → [WARN] {message}");
-        }
-
-        private void PrintInitFail(string message)
-        {
-            Console.WriteLine($"        → [FAIL] {message}");
-        }
-
+        
         public BaseOrderDetail CreateOrderDetail() { return new GemotestOrderDetail(); }
 
         public void FillDefaultOrderDetail(BaseOrderDetail _OrderDetail, OrderItemsCollection _Items)
@@ -247,11 +222,10 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            // Если строка пустая — подгружаем из файла
             if (string.IsNullOrWhiteSpace(_SystemOptions))
-                _SystemOptions = ReadTextSafe(LocalOptionsFilePath);
+                _SystemOptions = ReadTextSafe(OptionsFilePath);
 
-            LocalOptionsForm optionsSystem = new LocalOptionsForm(_SystemOptions);
+            OptionsFormsGemotest optionsSystem = new OptionsFormsGemotest(_SystemOptions);
             if (optionsSystem.ShowDialog() == DialogResult.OK)
             {
                 _SystemOptions = optionsSystem.Options.Pack();
@@ -265,14 +239,13 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            // Если строка пустая — подгружаем из файла
             if (string.IsNullOrWhiteSpace(_LocalOptions))
-                _LocalOptions = ReadTextSafe(OptionsFilePath);
+                _LocalOptions = ReadTextSafe(LocalOptionsFilePath);
 
-            OptionsFormsGemotest optionsGemotest = new OptionsFormsGemotest(_LocalOptions);
-            if (optionsGemotest.ShowDialog() == DialogResult.OK)
+            LocalOptionsForm Local_options = new LocalOptionsForm(_LocalOptions);
+            if (Local_options.ShowDialog() == DialogResult.OK)
             {
-                _LocalOptions = optionsGemotest.Options.Pack();
+                _LocalOptions = Local_options.Options.Pack();
                 WriteTextSafe(OptionsFilePath, _LocalOptions);
                 return true;
             }
@@ -283,14 +256,12 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            // Если хост прислал пусто — грузим из файлов
             if (string.IsNullOrWhiteSpace(_LocalOptions))
                 _LocalOptions = ReadTextSafe(OptionsFilePath);
 
             if (string.IsNullOrWhiteSpace(_SystemOptions))
                 _SystemOptions = ReadTextSafe(LocalOptionsFilePath);
 
-            // Применяем + сохраняем
             if (!string.IsNullOrWhiteSpace(_LocalOptions))
             {
                 Options = (OptionsGemotest)new OptionsGemotest().Unpack(_LocalOptions);
@@ -325,110 +296,56 @@ namespace Laboratory.Gemotest
                 Console.WriteLine("Предупреждение: Опции Gemotest неполные. Сервис не инициализирован.");
             }
         }
-
         public bool Init()
         {
-            const int totalSteps = 5;
-            int step = 0;
-
+            last_exception = null;
             try
             {
-                PrintInitHeader();
-                Directory.CreateDirectory(BaseDir);
-
-                step++;
-                PrintInitStep(step, totalSteps, "Загрузка/проверка опций Gemotest");
-
-                bool optionsFileExists = File.Exists(OptionsFilePath);
-                Options = OptionsGemotest.LoadFromFile(OptionsFilePath);
-
-                // Первый запуск или битые/пустые опции -> открываем форму
-                if (!optionsFileExists || !IsGemotestOptionsValid(Options))
-                {
-                    PrintInitWarn("Опции Gemotest отсутствуют/некорректны — требуется первичная настройка.");
-
-                    string xml = ReadTextSafe(OptionsFilePath);
-                    if (!ShowLocalOptions(ref xml))
-                    {
-                        PrintInitFail("Первичная настройка отменена пользователем.");
-                        return false;
-                    }
-
-                    Options = (OptionsGemotest)new OptionsGemotest().Unpack(xml);
-                    Options.SaveToFile(OptionsFilePath);
-                }
-                else
-                {
-                    // Нормализуем файл (после старого Pack мог быть мусор)
-                    Options.SaveToFile(OptionsFilePath);
-                }
+                if (Options == null)
+                    return false;
 
                 if (!IsGemotestOptionsValid(Options))
-                {
-                    PrintInitFail("Опции Gemotest неполные. Сервис не инициализирован.");
                     return false;
-                }
-                PrintInitOk();
 
-                step++;
-                PrintInitStep(step, totalSteps, "Загрузка локальных опций");
-
-                bool localFileExists = File.Exists(LocalOptionsFilePath);
-                LocalOptions = LocalOptionsGemotest.LoadFromFile(LocalOptionsFilePath);
-
-                if (!localFileExists)
+                if (Gemotest == null)
                 {
-                    PrintInitWarn("Локальные опции не найдены — создано по умолчанию.");
-                    LocalOptions.SaveToFile(LocalOptionsFilePath);
+                    Gemotest = new GemotestService(
+                        Options.UrlAdress, Options.Login, Options.Password,
+                        Options.Contractor, Options.Contractor_Code, Options.Salt);
                 }
-                else
+
+                // Обновление справочников
+                if (!Gemotest.all_dictionaries_is_valid())
                 {
-                    // нормализуем
-                    LocalOptions.SaveToFile(LocalOptionsFilePath);
-                    PrintInitOk();
+                    bool ok = Gemotest.get_all_dictionary();
+                    if (!ok) return false;
                 }
 
-                step++;
-                PrintInitStep(step, totalSteps, "Инициализация сервиса Gemotest");
-                Gemotest = new GemotestService(
-                    Options.UrlAdress, Options.Login, Options.Password,
-                    Options.Contractor, Options.Contractor_Code, Options.Salt);
-                PrintInitOk();
-
-                step++;
-                PrintInitStep(step, totalSteps, "Загрузка справочников и списка продуктов");
+                // Распаковка справочники в память
+                bool unpackOk = Dictionaries.Unpack(Gemotest.filePath);
+                if (!unpackOk)
+                {
+                    Console.WriteLine("Ошибка распаковки");
+                    return false;
+                    
+                }
+                _laboratoryGUI = new LaboratoryGemotestGUI();
                 EnsureProductsLoaded();
                 AllProducts = GetProducts();
-                if (AllProducts == null || AllProducts.Count == 0)
-                {
-                    PrintInitFail("Список продуктов пуст. Возможно, справочники не загружены.");
-                    return false;
-                }
-                PrintInitOk();
 
-                step++;
-                PrintInitStep(step, totalSteps, "Инициализация GUI-обвязки лаборатории");
-                laboratoryGUI = new LaboratoryGemotestGUI();
-                laboratoryGUI.GetProducts(AllProducts);
-                PrintInitOk();
+                _laboratoryGUI.SetAssignedModules(this, AllProducts, LocalOptions, Options);
+                Console.WriteLine("+");
+               
 
-                Console.WriteLine();
-                Console.WriteLine("╔════════════════════════════════════════════════════╗");
-                Console.WriteLine("║      Инициализация Гемотест успешно завершена      ║");
-                Console.WriteLine("╚════════════════════════════════════════════════════╝");
-                Console.WriteLine();
-
+                SiMed.Clinic.Logger.LogEvent.RemoveOldFilesFromLog("Gemotest", 30);
                 return true;
             }
             catch (Exception exc)
             {
-                Console.WriteLine();
-                PrintInitFail($"Ошибка инициализации Gemotest: {exc.Message}");
+                last_exception = exc;
                 return false;
             }
         }
-
-
         //--------------------------------------------------------------------//--------------------------------------------------------------------
 
         public void SetNumerator(INumerator _Numerator) { }
@@ -483,7 +400,7 @@ namespace Laboratory.Gemotest
 
         public void SetContainerMarkerList(List<IContainerMarker> _ContainerMarkerList) { }
 
-        public Exception GetLastException() { return null; }
+        public Exception GetLastException() { return last_exception; }
 
         public void BeginTransaction(LaboratoryTransactionType _TransactionType) { }
 

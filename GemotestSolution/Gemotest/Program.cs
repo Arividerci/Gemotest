@@ -5,9 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.ServiceModel.Description;
-using System.Xml;
-using System.Runtime.InteropServices;
-using System.ServiceModel.Description;
+using SiMed.Clinic;
+using SiMed.Laboratory;
 using System.Net;
 namespace Gemotest
 {
@@ -20,7 +19,7 @@ namespace Gemotest
         [STAThread]
         static void Main()
         {
-        
+
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

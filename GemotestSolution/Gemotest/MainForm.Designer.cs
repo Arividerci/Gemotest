@@ -59,6 +59,9 @@
             this.textBoxSurname = new System.Windows.Forms.TextBox();
             this.labelSurname = new System.Windows.Forms.Label();
             this.CheckResult_button = new System.Windows.Forms.Button();
+            this.bSystem = new System.Windows.Forms.Button();
+            this.bLocal = new System.Windows.Forms.Button();
+            this.bInit = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.groupBoxOrder.SuspendLayout();
             this.groupBoxPatient.SuspendLayout();
@@ -138,7 +141,7 @@
             this.CreateOrder_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.CreateOrder_button.FlatAppearance.BorderSize = 0;
             this.CreateOrder_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CreateOrder_button.Location = new System.Drawing.Point(501, 60);
+            this.CreateOrder_button.Location = new System.Drawing.Point(501, 158);
             this.CreateOrder_button.Name = "CreateOrder_button";
             this.CreateOrder_button.Size = new System.Drawing.Size(169, 32);
             this.CreateOrder_button.TabIndex = 20;
@@ -154,7 +157,7 @@
             this.groupBoxOrder.Controls.Add(this.textBoxDoctor);
             this.groupBoxOrder.Controls.Add(this.labelOrderNum);
             this.groupBoxOrder.Controls.Add(this.textBoxOrderNum);
-            this.groupBoxOrder.Location = new System.Drawing.Point(12, 40);
+            this.groupBoxOrder.Location = new System.Drawing.Point(12, 138);
             this.groupBoxOrder.Name = "groupBoxOrder";
             this.groupBoxOrder.Size = new System.Drawing.Size(420, 150);
             this.groupBoxOrder.TabIndex = 7;
@@ -223,7 +226,7 @@
             this.groupBoxPatient.Controls.Add(this.labelName);
             this.groupBoxPatient.Controls.Add(this.textBoxSurname);
             this.groupBoxPatient.Controls.Add(this.labelSurname);
-            this.groupBoxPatient.Location = new System.Drawing.Point(12, 200);
+            this.groupBoxPatient.Location = new System.Drawing.Point(12, 298);
             this.groupBoxPatient.Name = "groupBoxPatient";
             this.groupBoxPatient.Size = new System.Drawing.Size(510, 217);
             this.groupBoxPatient.TabIndex = 8;
@@ -332,7 +335,7 @@
             this.CheckResult_button.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.CheckResult_button.FlatAppearance.BorderSize = 0;
             this.CheckResult_button.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.CheckResult_button.Location = new System.Drawing.Point(501, 128);
+            this.CheckResult_button.Location = new System.Drawing.Point(501, 226);
             this.CheckResult_button.Name = "CheckResult_button";
             this.CheckResult_button.Size = new System.Drawing.Size(169, 32);
             this.CheckResult_button.TabIndex = 21;
@@ -340,11 +343,44 @@
             this.CheckResult_button.UseVisualStyleBackColor = false;
             this.CheckResult_button.Click += new System.EventHandler(this.CheckResult_button_Click);
             // 
+            // bSystem
+            // 
+            this.bSystem.Location = new System.Drawing.Point(243, 31);
+            this.bSystem.Name = "bSystem";
+            this.bSystem.Size = new System.Drawing.Size(108, 45);
+            this.bSystem.TabIndex = 22;
+            this.bSystem.Text = "Системные настройки";
+            this.bSystem.UseVisualStyleBackColor = true;
+            this.bSystem.Click += new System.EventHandler(this.bSystem_Click);
+            // 
+            // bLocal
+            // 
+            this.bLocal.Location = new System.Drawing.Point(129, 31);
+            this.bLocal.Name = "bLocal";
+            this.bLocal.Size = new System.Drawing.Size(108, 45);
+            this.bLocal.TabIndex = 23;
+            this.bLocal.Text = "Локальные настройки";
+            this.bLocal.UseVisualStyleBackColor = true;
+            this.bLocal.Click += new System.EventHandler(this.bLocal_Click);
+            // 
+            // bInit
+            // 
+            this.bInit.Location = new System.Drawing.Point(17, 31);
+            this.bInit.Name = "bInit";
+            this.bInit.Size = new System.Drawing.Size(108, 45);
+            this.bInit.TabIndex = 24;
+            this.bInit.Text = "Init";
+            this.bInit.UseVisualStyleBackColor = true;
+            this.bInit.Click += new System.EventHandler(this.bInit_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(705, 429);
+            this.ClientSize = new System.Drawing.Size(705, 572);
+            this.Controls.Add(this.bInit);
+            this.Controls.Add(this.bLocal);
+            this.Controls.Add(this.bSystem);
             this.Controls.Add(this.CheckResult_button);
             this.Controls.Add(this.groupBoxPatient);
             this.Controls.Add(this.groupBoxOrder);
@@ -398,5 +434,8 @@
         private System.Windows.Forms.ToolStripMenuItem отладкаКонсольToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem включитьКонсольToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem выключитьКонсольToolStripMenuItem;
+        private System.Windows.Forms.Button bSystem;
+        private System.Windows.Forms.Button bLocal;
+        private System.Windows.Forms.Button bInit;
     }
 }

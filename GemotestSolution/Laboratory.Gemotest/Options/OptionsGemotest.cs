@@ -22,11 +22,10 @@ namespace Laboratory.Gemotest
 
         public override string Pack()
         {
-            using (MemoryStream memStream = new MemoryStream())
+            using (var memStream = new MemoryStream())
             {
                 new XmlSerializer(typeof(OptionsGemotest)).Serialize(memStream, this);
-                memStream.Position = 0;
-                return Encoding.UTF8.GetString(memStream.GetBuffer());
+                return Encoding.UTF8.GetString(memStream.ToArray()); 
             }
         }
 
@@ -34,21 +33,22 @@ namespace Laboratory.Gemotest
         {
             try
             {
-                using (StringReader sR = new StringReader(source ?? string.Empty))
+                source = (source ?? string.Empty).TrimEnd('\0');
+                using (var sR = new StringReader(source))
                     return (OptionsGemotest)new XmlSerializer(typeof(OptionsGemotest)).Deserialize(sR);
             }
-            catch (Exception e)
+            catch
             {
-                //LogEvent.SaveExceptionToLog(e, GetType().Name);
                 return new OptionsGemotest();
             }
         }
 
         public void SaveToFile(string filePath)
         {
-            string xml = Pack();
-            File.WriteAllText(filePath, xml);
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath) ?? ".");
+            File.WriteAllText(filePath, Pack(), Encoding.UTF8);
         }
+
 
         public static OptionsGemotest LoadFromFile(string filePath)
         {

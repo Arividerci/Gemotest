@@ -26,15 +26,9 @@ namespace Laboratory.Gemotest.Options
         private string _url = "https://api.gemotest.ru/odoctor/odoctor/index/ws/1";
         private int chunk;
         private int size;
-        public string filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\10003\";
-        
-        private static readonly string[] DictionaryFiles = {
-            "Biomaterials", "Transport", "Localization", "Service_group", "Service_parameters",
-            "Directory", "Tests", "Samples_services", "Samples", "Processing_rules",
-            /*"Services_all_interlocks",*/ "Marketing_complex_composition", "Services_group_analogs",
-            "Service_auto_insert", "Services_supplementals"
-        };
-        private string ListFilePath => Path.Combine(filePath, "dictionaries_list.txt");
+        public string filePath =
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "Options");
 
         public GemotestService(string url, string login, string password, string contractor, string contractor_code, string salt)
         {
@@ -45,8 +39,19 @@ namespace Laboratory.Gemotest.Options
             _contractor = contractor;
             _contractor_code = contractor_code;
             _salt = salt;
-            filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\{contractor_code}\";
+
+            filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Симплекс", "СиМед - Клиника", "GemotestDictionaries", contractor_code) + Path.DirectorySeparatorChar;
         }
+
+
+        private static readonly string[] DictionaryFiles = {
+            "Biomaterials", "Transport", "Localization", "Service_group", "Service_parameters",
+            "Directory", "Tests", "Samples_services", "Samples", "Processing_rules",
+            /*"Services_all_interlocks",*/ "Marketing_complex_composition", "Services_group_analogs",
+            "Service_auto_insert", "Services_supplementals"
+        };
+        private string ListFilePath => Path.Combine(filePath, "dictionaries_list.txt");
 
         private void CreateNewDictionaries(string response, string fileName)
         {
@@ -138,65 +143,7 @@ namespace Laboratory.Gemotest.Options
         {
             DictionarySamplesServices.PrintToConsole(Dictionaries.SamplesServices, 100);
         }
-        public void PrintDictionaries()
-        {
-            if (get_all_dictionary())
-            {
-                Dictionaries.Unpack(filePath);
-
-                // Biomaterials
-                DictionaryBiomaterials.PrintToConsole(Dictionaries.Biomaterials, 10);
-
-                // Transport
-                DictionaryTransport.PrintToConsole(Dictionaries.Transport, 10);
-
-                // Localization
-                DictionaryLocalization.PrintToConsole(Dictionaries.Localization, 10);
-
-                // Service_group
-                DictionaryService_group.PrintToConsole(Dictionaries.ServiceGroup, 10);
-
-                // Service_parameters
-                DictionaryService_parameters.PrintToConsole(Dictionaries.ServiceParameters, 10);
-
-                // Directory (услуги)
-                DictionaryService.PrintToConsole(Dictionaries.Directory, 10);
-
-                // Tests
-                DictionaryTests.PrintToConsole(Dictionaries.Tests, 10);
-
-                // Samples_services
-                DictionarySamplesServices.PrintToConsole(Dictionaries.SamplesServices, 10);
-
-                // Samples
-                DictionarySamples.PrintToConsole(Dictionaries.Samples, 10);
-
-                // Processing_rules
-                DictionaryProcessingRules.PrintToConsole(Dictionaries.ProcessingRules, 10);
-
-                // Services_all_interlocks (если включен)
-                DictionaryServicesAllInterlocks.PrintToConsole(Dictionaries.ServicesAllInterlocks, 10);
-
-                // Marketing_complex_composition
-                DictionaryMarketingComplex.PrintToConsole(Dictionaries.MarketingComplexComposition, 10);
-
-                // Services_group_analogs
-                DictionaryServicesGroupAnalogs.PrintToConsole(Dictionaries.ServicesGroupAnalogs, 10);
-
-                // Service_auto_insert
-                DictionaryServiceAutoInsert.PrintToConsole(Dictionaries.ServiceAutoInsert, 10);
-
-                // Services_supplementals
-                DictionaryServicesSupplementals.PrintToConsole(Dictionaries.ServicesSupplementals, 10);
-
-                Console.WriteLine("Вывод справочников завершён.");
-            }
-            else
-            {
-                Console.WriteLine("Ошибка загрузки справочников. Вывод невозможен.");
-            }
-        }
-
+        
         public void get_biomaterials()
         {
             string response = RequestToGemotest("get_biomaterials");
@@ -330,7 +277,7 @@ namespace Laboratory.Gemotest.Options
                         throw new Exception($"Несоответствие текущего чанка: ожидался {currentChunk}, получен {thisCurrent}");
                     }
 
-                    // Сбор элементов (item)
+                    // Сбор элементов
                     XmlNode elementsNode = doc.SelectSingleNode("//elements");
                     if (elementsNode != null)
                     {

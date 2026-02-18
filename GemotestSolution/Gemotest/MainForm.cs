@@ -65,6 +65,7 @@ namespace Gemotest
             if (laboratoryGemotest.ShowSystemOptions(ref systemOptions))
             {
                 laboratoryGemotest.SetOptions(systemOptions, LocalOptions); 
+                laboratoryGemotest.SetOptions(systemOptions, LocalOptions); 
                 SystemOptions = systemOptions;
                 MessageBox.Show("Системные опции сохранены. Теперь можно загрузить продукты.", "Успех");
             }
@@ -118,6 +119,7 @@ namespace Gemotest
                 return;
             }
 
+            orderForSend.OrderDetail.LaboratoryType = laboratoryGemotest.GetLaboratoryType();
             laboratoryGemotest.CreateOrder(orderForSend);
         }
 

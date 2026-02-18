@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Laboratory.Gemotest;
@@ -11,7 +12,9 @@ namespace Laboratory.Gemotest.Options
     {
 
         public OptionsGemotest Options { get; private set; }
-        private readonly string filePath = "options.xml";
+        private readonly string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "Options", "options.xml");
+
 
         public OptionsFormsGemotest(string options)
         {

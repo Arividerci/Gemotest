@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<OptionsGemotest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <UrlAdress>https://api.gemotest.ru/odoctor/odoctor/index/ws/1</UrlAdress>
-  <Login>10003-gem</Login>
-  <Password>F(SP{2JPg</Password>
-  <Contractor> 10003. Fantom Интеграция</Contractor>
-  <Contractor_Code>10003</Contractor_Code>
-  <Salt>b4f6d7d2fe94123c03c86412a0b649494017463f</Salt>
-</OptionsGemotest>

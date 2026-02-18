@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
-using Laboratory.Gemotest.GemotestRequests; // Для Dictionaries.Directory и Dictionaries.Biomaterials
+using Laboratory.Gemotest.GemotestRequests; 
 
 namespace Laboratory.Gemotest.SourseClass
 {
@@ -270,26 +270,6 @@ namespace Laboratory.Gemotest.SourseClass
                 }
             }
 
-            // 2. Для продуктов, где есть выбор (service_type 0/1), назначаем дефолтный биоматериал:
-            for (int i = 0; i < Products.Count; i++)
-            {
-                // Если уже есть обязательный или выбранный – не трогаем
-                bool alreadyChosen = BioMaterials.Any(b =>
-                    b.Chosen.Contains(i) || b.Mandatory.Contains(i));
-
-                if (alreadyChosen)
-                    continue;
-
-                // Берём первый доступный вариант из Another
-                var candidate = BioMaterials.FirstOrDefault(b => b.Another.Contains(i));
-                if (candidate != null)
-                {
-                    candidate.Another.Remove(i);
-                    candidate.Chosen.Add(i);
-                }
-            }
-
-            // 3. Подчистим мусор (если вдруг есть биоматериалы, не привязанные ни к одному продукту)
             BioMaterials = BioMaterials
                 .Where(b => b.Chosen.Count > 0 || b.Another.Count > 0 || b.Mandatory.Count > 0)
                 .ToList();

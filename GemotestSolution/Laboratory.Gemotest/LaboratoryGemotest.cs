@@ -30,7 +30,7 @@ namespace Laboratory.Gemotest
 
         public LaboratoryType GetLaboratoryType()
         {
-            return LaboratoryType.None;
+            return (LaboratoryType)24;
             
         }
 
@@ -245,10 +245,17 @@ namespace Laboratory.Gemotest
 
         public bool ShowSystemOptions(ref string _SystemOptions)
         {
+            Directory.CreateDirectory(BaseDir);
+
+            // Если строка пустая — подгружаем из файла
+            if (string.IsNullOrWhiteSpace(_SystemOptions))
+                _SystemOptions = ReadTextSafe(LocalOptionsFilePath);
+
             LocalOptionsForm optionsSystem = new LocalOptionsForm(_SystemOptions);
             if (optionsSystem.ShowDialog() == DialogResult.OK)
             {
                 _SystemOptions = optionsSystem.Options.Pack();
+                WriteTextSafe(LocalOptionsFilePath, _SystemOptions);
                 return true;
             }
             return false;
@@ -256,10 +263,17 @@ namespace Laboratory.Gemotest
 
         public bool ShowLocalOptions(ref string _LocalOptions)
         {
+            Directory.CreateDirectory(BaseDir);
+
+            // Если строка пустая — подгружаем из файла
+            if (string.IsNullOrWhiteSpace(_LocalOptions))
+                _LocalOptions = ReadTextSafe(OptionsFilePath);
+
             OptionsFormsGemotest optionsGemotest = new OptionsFormsGemotest(_LocalOptions);
             if (optionsGemotest.ShowDialog() == DialogResult.OK)
             {
                 _LocalOptions = optionsGemotest.Options.Pack();
+                WriteTextSafe(OptionsFilePath, _LocalOptions);
                 return true;
             }
             return false;
@@ -267,17 +281,43 @@ namespace Laboratory.Gemotest
 
         public void SetOptions(string _SystemOptions, string _LocalOptions)
         {
-            
-            Options = (OptionsGemotest)new OptionsGemotest().Unpack(_LocalOptions);
-            LocalOptions = (LocalOptionsGemotest)new LocalOptionsGemotest().Unpack(_SystemOptions);
+            Directory.CreateDirectory(BaseDir);
 
-            Console.WriteLine(Options.UrlAdress);
-            if (!string.IsNullOrEmpty(Options.UrlAdress) && !string.IsNullOrEmpty(Options.Login) &&
-                !string.IsNullOrEmpty(Options.Password) && !string.IsNullOrEmpty(Options.Contractor) &&
-                !string.IsNullOrEmpty(Options.Contractor_Code) && !string.IsNullOrEmpty(Options.Salt))
+            // Если хост прислал пусто — грузим из файлов
+            if (string.IsNullOrWhiteSpace(_LocalOptions))
+                _LocalOptions = ReadTextSafe(OptionsFilePath);
+
+            if (string.IsNullOrWhiteSpace(_SystemOptions))
+                _SystemOptions = ReadTextSafe(LocalOptionsFilePath);
+
+            // Применяем + сохраняем
+            if (!string.IsNullOrWhiteSpace(_LocalOptions))
             {
-                Gemotest = new GemotestService(Options.UrlAdress, Options.Login, Options.Password,
-                                               Options.Contractor, Options.Contractor_Code, Options.Salt);
+                Options = (OptionsGemotest)new OptionsGemotest().Unpack(_LocalOptions);
+                WriteTextSafe(OptionsFilePath, _LocalOptions);
+            }
+            else
+            {
+                if (Options == null) Options = new OptionsGemotest();
+
+            }
+
+            if (!string.IsNullOrWhiteSpace(_SystemOptions))
+            {
+                LocalOptions = (LocalOptionsGemotest)new LocalOptionsGemotest().Unpack(_SystemOptions);
+                WriteTextSafe(LocalOptionsFilePath, _SystemOptions);
+            }
+            else
+            {
+
+                if (LocalOptions == null) LocalOptions = new LocalOptionsGemotest();
+            }
+
+            if (IsGemotestOptionsValid(Options))
+            {
+                Gemotest = new GemotestService(
+                    Options.UrlAdress, Options.Login, Options.Password,
+                    Options.Contractor, Options.Contractor_Code, Options.Salt);
             }
             else
             {
@@ -285,13 +325,6 @@ namespace Laboratory.Gemotest
                 Console.WriteLine("Предупреждение: Опции Gemotest неполные. Сервис не инициализирован.");
             }
         }
-
-        //--------------------------------------------------------------------//--------------------------------------------------------------------
-
-        public void SetNumerator(INumerator _Numerator) { }
-
-        private const string OptionsFilePath = "options.xml";
-        private const string LocalOptionsFilePath = "local_options.xml";
 
         public bool Init()
         {
@@ -301,69 +334,66 @@ namespace Laboratory.Gemotest
             try
             {
                 PrintInitHeader();
+                Directory.CreateDirectory(BaseDir);
 
                 step++;
-                PrintInitStep(step, totalSteps, "Загрузка системных опций из options.xml");
-                if (Options == null)
+                PrintInitStep(step, totalSteps, "Загрузка/проверка опций Gemotest");
+
+                bool optionsFileExists = File.Exists(OptionsFilePath);
+                Options = OptionsGemotest.LoadFromFile(OptionsFilePath);
+
+                // Первый запуск или битые/пустые опции -> открываем форму
+                if (!optionsFileExists || !IsGemotestOptionsValid(Options))
                 {
-                    Options = OptionsGemotest.LoadFromFile(OptionsFilePath);
+                    PrintInitWarn("Опции Gemotest отсутствуют/некорректны — требуется первичная настройка.");
+
+                    string xml = ReadTextSafe(OptionsFilePath);
+                    if (!ShowLocalOptions(ref xml))
+                    {
+                        PrintInitFail("Первичная настройка отменена пользователем.");
+                        return false;
+                    }
+
+                    Options = (OptionsGemotest)new OptionsGemotest().Unpack(xml);
+                    Options.SaveToFile(OptionsFilePath);
+                }
+                else
+                {
+                    // Нормализуем файл (после старого Pack мог быть мусор)
+                    Options.SaveToFile(OptionsFilePath);
                 }
 
-                if (Options == null)
+                if (!IsGemotestOptionsValid(Options))
                 {
-                    PrintInitFail("Не удалось загрузить системные опции (options.xml).");
+                    PrintInitFail("Опции Gemotest неполные. Сервис не инициализирован.");
                     return false;
                 }
                 PrintInitOk();
 
                 step++;
                 PrintInitStep(step, totalSteps, "Загрузка локальных опций");
-                if (LocalOptions == null)
+
+                bool localFileExists = File.Exists(LocalOptionsFilePath);
+                LocalOptions = LocalOptionsGemotest.LoadFromFile(LocalOptionsFilePath);
+
+                if (!localFileExists)
                 {
-                    LocalOptions = new LocalOptionsGemotest();
-                    PrintInitWarn("Локальные опции не найдены, создан объект по умолчанию.");
+                    PrintInitWarn("Локальные опции не найдены — создано по умолчанию.");
+                    LocalOptions.SaveToFile(LocalOptionsFilePath);
                 }
                 else
                 {
+                    // нормализуем
+                    LocalOptions.SaveToFile(LocalOptionsFilePath);
                     PrintInitOk();
                 }
 
                 step++;
                 PrintInitStep(step, totalSteps, "Инициализация сервиса Gemotest");
-                if (Gemotest == null && Options != null)
-                {
-                    if (!string.IsNullOrEmpty(Options.UrlAdress) &&
-                        !string.IsNullOrEmpty(Options.Login) &&
-                        !string.IsNullOrEmpty(Options.Password) &&
-                        !string.IsNullOrEmpty(Options.Contractor) &&
-                        !string.IsNullOrEmpty(Options.Contractor_Code) &&
-                        !string.IsNullOrEmpty(Options.Salt))
-                    {
-                        Gemotest = new GemotestService(
-                            Options.UrlAdress,
-                            Options.Login,
-                            Options.Password,
-                            Options.Contractor,
-                            Options.Contractor_Code,
-                            Options.Salt);
-                        PrintInitOk();
-                    }
-                    else
-                    {
-                        PrintInitFail("Опции Gemotest неполные. Сервис не инициализирован.");
-                        Console.WriteLine("        Проверьте UrlAdress, Login, Password, Contractor, Contractor_Code, Salt.");
-                        return false;
-                    }
-                }
-                else if (Gemotest == null)
-                {
-                    PrintInitFail("Gemotest == null после попытки инициализации.");
-                    return false;
-                }
-                else
-                {
-                    PrintInitOk();
-                }
+                Gemotest = new GemotestService(
+                    Options.UrlAdress, Options.Login, Options.Password,
+                    Options.Contractor, Options.Contractor_Code, Options.Salt);
+                PrintInitOk();
 
                 step++;
                 PrintInitStep(step, totalSteps, "Загрузка справочников и списка продуктов");
@@ -399,6 +429,49 @@ namespace Laboratory.Gemotest
         }
 
 
+        //--------------------------------------------------------------------//--------------------------------------------------------------------
+
+        public void SetNumerator(INumerator _Numerator) { }
+
+        private static readonly string BaseDir =
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "Options");
+
+        private static readonly string OptionsFilePath = Path.Combine(BaseDir, "options.xml");
+        private static readonly string LocalOptionsFilePath = Path.Combine(BaseDir, "local_options.xml");
+
+        private static void WriteTextSafe(string path, string text)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
+            File.WriteAllText(path, text ?? string.Empty, Encoding.UTF8);
+        }
+
+        private static string ReadTextSafe(string path)
+        {
+            try
+            {
+                return File.Exists(path) ? File.ReadAllText(path, Encoding.UTF8) : string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool IsGemotestOptionsValid(OptionsGemotest o)
+        {
+            return o != null &&
+                   !string.IsNullOrWhiteSpace(o.UrlAdress) &&
+                   !string.IsNullOrWhiteSpace(o.Login) &&
+                   !string.IsNullOrWhiteSpace(o.Password) &&
+                   !string.IsNullOrWhiteSpace(o.Contractor) &&
+                   !string.IsNullOrWhiteSpace(o.Contractor_Code) &&
+                   !string.IsNullOrWhiteSpace(o.Salt);
+        }
+
+
+
+       
         public bool CheckResult(Order _Order, ref ResultsCollection _Results) { 
             _Results = null;
             return false;

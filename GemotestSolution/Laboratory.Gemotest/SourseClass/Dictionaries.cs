@@ -1461,136 +1461,59 @@ namespace Laboratory.Gemotest.GemotestRequests
     // Класс для справочника дополнительных тестов для услуг (get_services_supplementals)
     public class DictionaryServicesSupplementals
     {
-        
-            public string complex_id { get; set; } = string.Empty;
-            public string service_id { get; set; } = string.Empty;
-            public float price { get; set; }
-            public string localization_id { get; set; } = string.Empty;
-            public string biomaterial_id { get; set; } = string.Empty;
-            public string transport_id { get; set; } = string.Empty;
-            public string main_service { get; set; } = string.Empty;
+        public string parent_id { get; set; } = string.Empty;   
+        public string test_id { get; set; } = string.Empty;     
+        public string name { get; set; } = string.Empty;        
+        public string value { get; set; } = string.Empty;       
+        public bool required { get; set; }                      
 
-            public static void PrintToConsole(List<DictionaryServicesSupplementals> output, int count)
+        public static List<DictionaryServicesSupplementals> Parse(string xmlContent)
+        {
+            var list = new List<DictionaryServicesSupplementals>();
+            if (string.IsNullOrWhiteSpace(xmlContent))
+                return list;
+
+            try
             {
-                Console.WriteLine($"Dictionary Marketing_complex_composition");
-                for (int i = 0; i < Math.Min(count, output.Count); i++)
+                var doc = new System.Xml.XmlDocument();
+                doc.LoadXml(xmlContent);
+
+                // Обычно: ... <supplementals><item>...</item></supplementals>
+                // Но делаем устойчиво: ищем любые item где есть parent_id/test_id
+                var nodes = doc.SelectNodes("//*[local-name()='item' and (*[local-name()='parent_id'] or *[local-name()='test_id'])]");
+                if (nodes == null) return list;
+
+                foreach (System.Xml.XmlNode n in nodes)
                 {
-                    var item = output[i];
-                    Console.WriteLine($"complex_id: {item.complex_id}, service_id: {item.service_id}, price: {item.price}, localization_id: {item.localization_id}, biomaterial_id: {item.biomaterial_id}, transport_id: {item.transport_id}, main_service: {item.main_service}");
-                }
-                Console.WriteLine("\n");
-            }
+                    var parentNode = n.SelectSingleNode("*[local-name()='parent_id']");
+                    var testNode = n.SelectSingleNode("*[local-name()='test_id']");
+                    var nameNode = n.SelectSingleNode("*[local-name()='name']");
+                    var valueNode = n.SelectSingleNode("*[local-name()='value']");
+                    var reqNode = n.SelectSingleNode("*[local-name()='required']");
 
-            public static List<DictionaryServicesSupplementals> Parse(string xmlContent)
-            {
-                var compositions = new List<DictionaryServicesSupplementals>();
-                try
-                {
-                    XmlDocument doc = new XmlDocument();
-                    doc.LoadXml(xmlContent);
-
-                    var itemNodes = doc.SelectNodes("//*[local-name()='item']");
-
-                    if (itemNodes != null && itemNodes.Count > 0)
+                    var item = new DictionaryServicesSupplementals
                     {
-                        foreach (XmlNode node in itemNodes)
-                        {
-                            var complexIdNode = node.SelectSingleNode("*[local-name()='complex_id']");
-                            var serviceIdNode = node.SelectSingleNode("*[local-name()='service_id']");
-                            var priceNode = node.SelectSingleNode("*[local-name()='price']");
-                            var localizationIdNode = node.SelectSingleNode("*[local-name()='localization_id']");
-                            var biomaterialIdNode = node.SelectSingleNode("*[local-name()='biomaterial_id']");
-                            var transportIdNode = node.SelectSingleNode("*[local-name()='transport_id']");
-                            var mainServiceNode = node.SelectSingleNode("*[local-name()='main_service']");
+                        parent_id = parentNode?.InnerText ?? "",
+                        test_id = testNode?.InnerText ?? "",
+                        name = nameNode?.InnerText ?? "",
+                        value = (valueNode == null || valueNode.Attributes?["xsi:nil"] != null) ? "" : (valueNode.InnerText ?? ""),
+                        required = reqNode != null && bool.TryParse(reqNode.InnerText, out var r) ? r : false
+                    };
 
-                            float priceValue = 0;
-                            if (priceNode != null)
-                            {
-                                var nilAttribute = priceNode.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
-                                if (nilAttribute != null && nilAttribute.Value == "true")
-                                {
-                                    priceValue = 0;
-                                }
-                                else if (!string.IsNullOrEmpty(priceNode.InnerText))
-                                {
-                                    float.TryParse(priceNode.InnerText, out priceValue);
-                                }
-                            }
-
-                            var composition = new DictionaryServicesSupplementals
-                            {
-                                complex_id = complexIdNode?.InnerText ?? string.Empty,
-                                service_id = serviceIdNode?.InnerText ?? string.Empty,
-                                price = priceValue,
-                                localization_id = localizationIdNode?.InnerText ?? string.Empty,
-                                biomaterial_id = biomaterialIdNode?.InnerText ?? string.Empty,
-                                transport_id = transportIdNode?.InnerText ?? string.Empty,
-                                main_service = mainServiceNode?.InnerText ?? string.Empty
-                            };
-
-                            if (!string.IsNullOrEmpty(composition.complex_id) && composition.complex_id != "*" &&
-                                !string.IsNullOrEmpty(composition.service_id) && composition.service_id != "*")
-                            {
-                                compositions.Add(composition);
-                            }
-                        }
-                        return compositions;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Элементы <item> не найдены.");
-                        return compositions;
-                    }
-                }
-                catch (XmlException ex)
-                {
-                    Console.WriteLine($"Ошибка парсинга: {ex.Message}");
-                    return new List<DictionaryServicesSupplementals>();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Общая ошибка: {ex.Message}");
-                    return new List<DictionaryServicesSupplementals>();
+                    if (!string.IsNullOrWhiteSpace(item.parent_id) && !string.IsNullOrWhiteSpace(item.test_id))
+                        list.Add(item);
                 }
             }
-
-            private static int ParseArchive(XmlNode archiveNode)
+            catch
             {
-                int archiveValue = 0;
-                if (archiveNode != null)
-                {
-                    var nilAttribute = archiveNode.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
-                    if (nilAttribute != null && nilAttribute.Value == "true")
-                    {
-                        archiveValue = 0;
-                    }
-                    else if (!string.IsNullOrEmpty(archiveNode.InnerText))
-                    {
-                        int.TryParse(archiveNode.InnerText, out archiveValue);
-                    }
-                }
-                return archiveValue;
+                return new List<DictionaryServicesSupplementals>();
             }
 
-            private static float ParseFloat(XmlNode floatNode)
-            {
-                float floatValue = 0;
-                if (floatNode != null)
-                {
-                    var nilAttribute = floatNode.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
-                    if (nilAttribute != null && nilAttribute.Value == "true")
-                    {
-                        floatValue = 0;
-                    }
-                    else if (!string.IsNullOrEmpty(floatNode.InnerText))
-                    {
-                        float.TryParse(floatNode.InnerText, out floatValue);
-                    }
-                }
-                return floatValue;
-            }
+            return list;
         }
-    
+    }
+
+
 
     // Класс для справочника лабораторных отделений (get_branches)
     public class DictionaryBranches

@@ -133,7 +133,7 @@
             this.go_button.Name = "go_button";
             this.go_button.Size = new System.Drawing.Size(160, 35);
             this.go_button.TabIndex = 2;
-            this.go_button.Text = "Продолжить";
+            this.go_button.Text = "Сохранить";
             this.go_button.UseVisualStyleBackColor = true;
             this.go_button.Click += new System.EventHandler(this.go_button_Click);
             // 

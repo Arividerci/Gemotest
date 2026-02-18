@@ -9,102 +9,207 @@ using System.Globalization;
 
 namespace Laboratory.Gemotest.GemotestRequests
 {
-    public static class Dictionaries
+    public sealed class Dictionaries
     {
 
-        private static string filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\10003\";
+        private string _filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\10003\";
 
-        public static List<DictionaryBiomaterials> Biomaterials { get; private set; } = new List<DictionaryBiomaterials>();
-        public static List<DictionaryTransport> Transport { get; private set; } = new List<DictionaryTransport>();
-        public static List<DictionaryLocalization> Localization { get; private set; } = new List<DictionaryLocalization>();
-        public static List<DictionaryService_group> ServiceGroup { get; private set; } = new List<DictionaryService_group>();
-        public static List<DictionaryService_parameters> ServiceParameters { get; private set; } = new List<DictionaryService_parameters>();
-        public static List<DictionaryService> Directory { get; private set; } = new List<DictionaryService>();
-        public static List<DictionaryTests> Tests { get; private set; } = new List<DictionaryTests>();
-        public static List<DictionarySamplesServices> SamplesServices { get; private set; } = new List<DictionarySamplesServices>();
-        public static List<DictionarySamples> Samples { get; private set; } = new List<DictionarySamples>();
-        public static List<DictionaryProcessingRules> ProcessingRules { get; private set; } = new List<DictionaryProcessingRules>();
-        public static List<DictionaryServicesAllInterlocks> ServicesAllInterlocks { get; private set; } = new List<DictionaryServicesAllInterlocks>();
-        public static List<DictionaryMarketingComplex> MarketingComplexComposition { get; private set; } = new List<DictionaryMarketingComplex>();
-        public static List<DictionaryServicesGroupAnalogs> ServicesGroupAnalogs { get; private set; } = new List<DictionaryServicesGroupAnalogs>();
-        public static List<DictionaryServiceAutoInsert> ServiceAutoInsert { get; private set; } = new List<DictionaryServiceAutoInsert>();
-        public static List<DictionaryServicesSupplementals> ServicesSupplementals { get; private set; } = new List<DictionaryServicesSupplementals>();
+        private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
 
-        public static bool Unpack(string path)
+
+        public string FilePath => _filePath;
+
+        public Dictionary<string, DictionaryBiomaterials> Biomaterials { get; private set; } = new Dictionary<string, DictionaryBiomaterials>(KeyComparer);
+
+        public Dictionary<string, DictionaryTransport> Transport { get; private set; } = new Dictionary<string, DictionaryTransport>(KeyComparer);
+
+        public Dictionary<string, DictionaryLocalization> Localization { get; private set; } = new Dictionary<string, DictionaryLocalization>(KeyComparer);
+
+        public Dictionary<string, DictionaryService_group> ServiceGroup { get; private set; } = new Dictionary<string, DictionaryService_group>(KeyComparer);
+
+        public Dictionary<string, DictionaryService> Directory { get; private set; } = new Dictionary<string, DictionaryService>(KeyComparer);
+
+        public Dictionary<string, DictionaryTests> Tests { get; private set; } = new Dictionary<string, DictionaryTests>(KeyComparer);
+
+        public Dictionary<string, DictionarySamples> Samples { get; private set; } = new Dictionary<string, DictionarySamples>(KeyComparer);
+
+        public Dictionary<int, DictionaryProcessingRules> ProcessingRules { get; private set; } = new Dictionary<int, DictionaryProcessingRules>();
+
+        public Dictionary<string, List<DictionaryService_parameters>> ServiceParameters { get; private set; } = new Dictionary<string, List<DictionaryService_parameters>>(KeyComparer);
+
+        public Dictionary<string, List<DictionarySamplesServices>> SamplesServices { get; private set; } = new Dictionary<string, List<DictionarySamplesServices>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryServicesAllInterlocks>> ServicesAllInterlocks { get; private set; } = new Dictionary<string, List<DictionaryServicesAllInterlocks>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryMarketingComplex>> MarketingComplexByComplexId { get; private set; } = new Dictionary<string, List<DictionaryMarketingComplex>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryMarketingComplex>> MarketingComplexByServiceId { get; private set; } = new Dictionary<string, List<DictionaryMarketingComplex>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryServicesGroupAnalogs>> ServicesGroupAnalogs { get; private set; } = new Dictionary<string, List<DictionaryServicesGroupAnalogs>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryServiceAutoInsert>> ServiceAutoInsert { get; private set; } = new Dictionary<string, List<DictionaryServiceAutoInsert>>(KeyComparer);
+
+        public Dictionary<string, List<DictionaryServicesSupplementals>> ServicesSupplementals { get; private set; } = new Dictionary<string, List<DictionaryServicesSupplementals>>(KeyComparer);
+
+
+        public IEnumerable<DictionaryService_parameters> ServiceParametersAll => ServiceParameters.Values.SelectMany(x => x);
+        public IEnumerable<DictionarySamplesServices> SamplesServicesAll => SamplesServices.Values.SelectMany(x => x);
+        public IEnumerable<DictionaryMarketingComplex> MarketingComplexAll => MarketingComplexByComplexId.Values.SelectMany(x => x);
+        public IEnumerable<DictionaryServicesGroupAnalogs> ServicesGroupAnalogsAll => ServicesGroupAnalogs.Values.SelectMany(x => x);
+        public IEnumerable<DictionaryServiceAutoInsert> ServiceAutoInsertAll => ServiceAutoInsert.Values.SelectMany(x => x);
+        public IEnumerable<DictionaryServicesSupplementals> ServicesSupplementalsAll => ServicesSupplementals.Values.SelectMany(x => x);
+
+        private Dictionary<string, T> BuildMap<T>(IEnumerable<T> source, Func<T, string> keySelector)
+        {
+            var map = new Dictionary<string, T>(KeyComparer);
+
+            if (source == null)
+                return map;
+
+            foreach (var item in source)
+            {
+                if (item == null) continue;
+
+                var key = (keySelector(item) ?? "").Trim();
+                if (key.Length == 0) continue;
+
+
+                if (!map.ContainsKey(key))
+                    map[key] = item;
+            }
+
+            return map;
+        }
+
+        private Dictionary<string, List<T>> BuildGroup<T>(IEnumerable<T> source, Func<T, string> keySelector)
+        {
+            var map = new Dictionary<string, List<T>>(KeyComparer);
+
+            if (source == null)
+                return map;
+
+            foreach (var item in source)
+            {
+                if (item == null) continue;
+
+                var key = (keySelector(item) ?? "").Trim();
+                if (key.Length == 0) continue;
+
+                if (!map.TryGetValue(key, out var list))
+                {
+                    list = new List<T>();
+                    map[key] = list;
+                }
+
+                list.Add(item);
+            }
+
+            return map;
+        }
+
+        private Dictionary<int, T> BuildMapInt<T>(IEnumerable<T> source, Func<T, int> keySelector)
+        {
+            var map = new Dictionary<int, T>();
+
+            if (source == null)
+                return map;
+
+            foreach (var item in source)
+            {
+                if (item == null) continue;
+
+                int key = keySelector(item);
+                if (!map.ContainsKey(key))
+                    map[key] = item;
+            }
+
+            return map;
+        }
+
+        public bool Unpack(string path)
         {
             if (!string.IsNullOrEmpty(path))
-                filePath = path;
+                _filePath = path;
 
             try
             {
-                // Biomaterials
-                string biomatContent = File.ReadAllText(filePath + "Biomaterials.xml");
-                Biomaterials = DictionaryBiomaterials.Parse(biomatContent);
 
-                // Transport
-                string transportContent = File.ReadAllText(Path.Combine(filePath, "Transport.xml"));
-                Transport = DictionaryTransport.Parse(transportContent);
-
-                // Localization
-                string locContent = File.ReadAllText(Path.Combine(filePath, "Localization.xml"));
-                Localization = DictionaryLocalization.Parse(locContent);
-
-                // Service_group
-                string sgContent = File.ReadAllText(Path.Combine(filePath, "Service_group.xml"));
-                ServiceGroup = DictionaryService_group.Parse(sgContent);
-
-                // Service_parameters
-                string spContent = File.ReadAllText(Path.Combine(filePath, "Service_parameters.xml"));
-                ServiceParameters = DictionaryService_parameters.Parse(spContent);
-
-                // Directory (услуги)
-                string dirContent = File.ReadAllText(Path.Combine(filePath, "Directory.xml"));
-                Directory = DictionaryService.Parse(dirContent);
-
-                // Tests
-                string testsContent = File.ReadAllText(Path.Combine(filePath, "Tests.xml"));
-                Tests = DictionaryTests.Parse(testsContent);
-
-                // Samples_services
-                string ssContent = File.ReadAllText(Path.Combine(filePath, "Samples_services.xml"));
-                SamplesServices = DictionarySamplesServices.Parse(ssContent);
-
-                // Samples
-                string sampContent = File.ReadAllText(Path.Combine(filePath, "Samples.xml"));
-                Samples = DictionarySamples.Parse(sampContent);
-
-                // Processing_rules
-                string prContent = File.ReadAllText(Path.Combine(filePath, "Processing_rules.xml"));
-                ProcessingRules = DictionaryProcessingRules.Parse(prContent);
-
-                // Services_all_interlocks
-                // Пока без них, слишком затратно по времени
-                /*string saiContent = File.ReadAllText(Path.Combine(filePath, "Services_all_interlocks.xml"));
-                ServicesAllInterlocks = DictionaryServicesAllInterlocks.Parse(saiContent);*/
+                string biomatContent = File.ReadAllText(Path.Combine(_filePath, "Biomaterials.xml"));
+                var biomList = DictionaryBiomaterials.Parse(biomatContent);
+                Biomaterials = BuildMap(biomList, x => x.id);
 
 
-                // Marketing_complex_composition (используем статический парсер)
-                string mccContent = File.ReadAllText(Path.Combine(filePath, "Marketing_complex_composition.xml"));
-                MarketingComplexComposition = DictionaryMarketingComplex.Parse(mccContent);
+                string transportContent = File.ReadAllText(Path.Combine(_filePath, "Transport.xml"));
+                var transportList = DictionaryTransport.Parse(transportContent);
+                Transport = BuildMap(transportList, x => x.id);
 
-                // Services_group_analogs
-                string sgaContent = File.ReadAllText(Path.Combine(filePath, "Services_group_analogs.xml"));
-                ServicesGroupAnalogs = DictionaryServicesGroupAnalogs.Parse(sgaContent);
 
-                // Service_auto_insert
-                string sai2Content = File.ReadAllText(Path.Combine(filePath, "Service_auto_insert.xml"));
-                ServiceAutoInsert = DictionaryServiceAutoInsert.Parse(sai2Content);
+                string locContent = File.ReadAllText(Path.Combine(_filePath, "Localization.xml"));
+                var locList = DictionaryLocalization.Parse(locContent);
+                Localization = BuildMap(locList, x => x.id);
 
-                // Services_supplementals
-                string ss2Content = File.ReadAllText(Path.Combine(filePath, "Services_supplementals.xml"));
-                ServicesSupplementals = DictionaryServicesSupplementals.Parse(ss2Content);
 
-                Console.WriteLine("Все справочники успешно загружены в память.");
+                string sgContent = File.ReadAllText(Path.Combine(_filePath, "Service_group.xml"));
+                var sgList = DictionaryService_group.Parse(sgContent);
+                ServiceGroup = BuildMap(sgList, x => x.id);
+
+
+                string spContent = File.ReadAllText(Path.Combine(_filePath, "Service_parameters.xml"));
+                var spList = DictionaryService_parameters.Parse(spContent);
+                ServiceParameters = BuildGroup(spList, x => x.service_id);
+
+
+                string dirContent = File.ReadAllText(Path.Combine(_filePath, "Directory.xml"));
+                var dirList = DictionaryService.Parse(dirContent);
+                Directory = BuildMap(dirList, x => x.id);
+
+
+                string testsContent = File.ReadAllText(Path.Combine(_filePath, "Tests.xml"));
+                var testsList = DictionaryTests.Parse(testsContent);
+                Tests = BuildMap(testsList, x => x.test_id);
+
+
+                string ssContent = File.ReadAllText(Path.Combine(_filePath, "Samples_services.xml"));
+                var ssList = DictionarySamplesServices.Parse(ssContent);
+                SamplesServices = BuildGroup(ssList, x => x.service_id);
+
+
+                string sampContent = File.ReadAllText(Path.Combine(_filePath, "Samples.xml"));
+                var samplesList = DictionarySamples.Parse(sampContent);
+                Samples = BuildMap(samplesList, x => x.id);
+
+
+                string prContent = File.ReadAllText(Path.Combine(_filePath, "Processing_rules.xml"));
+                var prList = DictionaryProcessingRules.Parse(prContent);
+                ProcessingRules = BuildMapInt(prList, x => x.rule_id);
+
+
+                string mccContent = File.ReadAllText(Path.Combine(_filePath, "Marketing_complex_composition.xml"));
+                var mccList = DictionaryMarketingComplex.Parse(mccContent);
+                MarketingComplexByComplexId = BuildGroup(mccList, x => x.complex_id);
+                MarketingComplexByServiceId = BuildGroup(mccList, x => x.service_id);
+
+
+                string sgaContent = File.ReadAllText(Path.Combine(_filePath, "Services_group_analogs.xml"));
+                var sgaList = DictionaryServicesGroupAnalogs.Parse(sgaContent);
+                ServicesGroupAnalogs = BuildGroup(sgaList, x => x.group_id);
+
+
+                string sai2Content = File.ReadAllText(Path.Combine(_filePath, "Service_auto_insert.xml"));
+                var sai2List = DictionaryServiceAutoInsert.Parse(sai2Content);
+                ServiceAutoInsert = BuildGroup(sai2List, x => x.service_id);
+
+
+                string ss2Content = File.ReadAllText(Path.Combine(_filePath, "Services_supplementals.xml"));
+                var ss2List = DictionaryServicesSupplementals.Parse(ss2Content);
+                ServicesSupplementals = BuildGroup(ss2List, x => x.parent_id);
+
+
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при загрузке справочников в память: {ex.Message}");
+
                 return false;
             }
         }
@@ -119,16 +224,6 @@ namespace Laboratory.Gemotest.GemotestRequests
 
     public class DictionaryBiomaterials : BaseDictionary
     {
-        public static void PrintToConsole(List<DictionaryBiomaterials> output, int count)
-        {
-            Console.WriteLine($"Dictionary Biomaterials");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var biomaterial = output[i];
-                Console.WriteLine($"id: {biomaterial.id}, name: {biomaterial.name}, archive: {biomaterial.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryBiomaterials> Parse(string xmlContent)
         {
@@ -178,18 +273,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return biomaterials;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryBiomaterials>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryBiomaterials>();
             }
         }
@@ -198,16 +293,6 @@ namespace Laboratory.Gemotest.GemotestRequests
     public class DictionaryTransport : BaseDictionary
     {
 
-        public static void PrintToConsole(List<DictionaryTransport> output, int count)
-        {
-            Console.WriteLine($"Dictionary Transport");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var transport = output[i];
-                Console.WriteLine($"id: {transport.id}, name: {transport.name}, archive: {transport.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryTransport> Parse(string xmlContent)
         {
@@ -258,18 +343,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return transports;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryTransport>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryTransport>();
             }
         }
@@ -277,16 +362,6 @@ namespace Laboratory.Gemotest.GemotestRequests
 
     public class DictionaryLocalization : BaseDictionary
     {
-        public static void PrintToConsole(List<DictionaryLocalization> output, int count)
-        {
-            Console.WriteLine($"Dictionary Localization");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var localization = output[i];
-                Console.WriteLine($"id: {localization.id}, name: {localization.name}, archive: {localization.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryLocalization> Parse(string xmlContent)
         {
@@ -336,18 +411,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return localizations;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryLocalization>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryLocalization>();
             }
         }
@@ -357,16 +432,6 @@ namespace Laboratory.Gemotest.GemotestRequests
     {
         public string parent_id { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionaryService_group> output, int count)
-        {
-            Console.WriteLine($"Dictionary Service_group");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var service_group = output[i];
-                Console.WriteLine($"id: {service_group.id}, parent_id: {service_group.parent_id}, name: {service_group.name}, archive: {service_group.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryService_group> Parse(string xmlContent)
         {
@@ -418,18 +483,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return service_groups;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryService_group>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryService_group>();
             }
         }
@@ -443,16 +508,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public string transport_id { get; set; } = string.Empty;
         public int archive { get; set; }
 
-        public static void PrintToConsole(List<DictionaryService_parameters> output, int count)
-        {
-            Console.WriteLine($"Dictionary Service_parameters");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var service_param = output[i];
-                Console.WriteLine($"service_id: {service_param.service_id}, biomaterial_id: {service_param.biomaterial_id}, localization_id: {service_param.localization_id}, transport_id: {service_param.transport_id}, archive: {service_param.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryService_parameters> Parse(string xmlContent)
         {
@@ -506,24 +561,24 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return service_parameters;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryService_parameters>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryService_parameters>();
             }
         }
     }
 
-    // Класс для справочника услуг (get_directory)
+
     public class DictionaryService
     {
         public string id { get; set; } = string.Empty;
@@ -552,16 +607,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public bool is_passport_required { get; set; }
         public bool is_address_required { get; set; }
 
-        public static void PrintToConsole(List<DictionaryService> output, int count)
-        {
-            Console.WriteLine($"Dictionary Services");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var service = output[i];
-                Console.WriteLine($"id: {service.id}, name: {service.name}, code: {service.code}, is_blocked: {service.is_blocked}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryService> Parse(string xmlContent)
         {
@@ -631,7 +676,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                             is_address_required = isAddressRequiredNode != null && bool.TryParse(isAddressRequiredNode.InnerText, out bool iar) ? iar : false
                         };
 
-                        // Парсинг additional_tests как массив id
+
                         if (additionalTestsNode != null)
                         {
                             var addTestNodes = additionalTestsNode.SelectNodes("*[local-name()='item']/*[local-name()='id']");
@@ -653,40 +698,30 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return services;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryService>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryService>();
             }
         }
     }
 
-    // Класс для справочника тестов (get_tests)
+
     public class DictionaryTests
     {
         public string service_id { get; set; } = string.Empty;
         public string test_id { get; set; } = string.Empty;
         public string test_name { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionaryTests> output, int count)
-        {
-            Console.WriteLine($"Dictionary Tests");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var test = output[i];
-                Console.WriteLine($"id: {test.test_id}, name: {test.test_name}, service_id: {test.service_id}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryTests> Parse(string xmlContent)
         {
@@ -722,18 +757,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return tests;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryTests>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryTests>();
             }
         }
@@ -750,17 +785,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public int service_count { get; set; }
         public int primary_sample_id { get; set; }
 
-        public static void PrintToConsole(List<DictionarySamplesServices> output, int count)
-        {
-            Console.WriteLine($"Dictionary Samples_services");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var samples_service = output[i];
-
-                Console.WriteLine($"service_id: {samples_service.service_id}, localization_id: {samples_service.localization_id}, sample_id: {samples_service.sample_id}, biomaterial_id: {samples_service.biomaterial_id}, microbiology_biomaterial_id: {samples_service.microbiology_biomaterial_id}, test_ids: {samples_service.test_ids}, service_count: {samples_service.service_count}, primary_sample_id: {samples_service.primary_sample_id}\n");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionarySamplesServices> Parse(string xmlContent)
         {
@@ -848,24 +872,24 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return samples_services;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionarySamplesServices>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionarySamplesServices>();
             }
         }
     }
 
-    // Класс для справочника проб (get_samples)
+
     public class DictionarySamples : BaseDictionary
     {
         public bool utilize { get; set; }
@@ -875,19 +899,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public string sample_processing_rule_id { get; set; } = string.Empty;
         public string utilization_type { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionarySamples> output, int count)
-        {
-            Console.WriteLine("Dictionary Samples");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var s = output[i];
-                Console.WriteLine(
-                    $"id: {s.id}, name: {s.name}, utilize: {s.utilize}, priority: {s.priority}, " +
-                    $"transport_id: {s.transport_id}, sample_processing_rule_id: {s.sample_processing_rule_id}, utilization_type: {s.utilization_type}, archive: {s.archive}"
-                );
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionarySamples> Parse(string xmlContent)
         {
@@ -907,7 +918,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 if (sampleNodes == null || sampleNodes.Count == 0)
                 {
-                    Console.WriteLine("Элементы <samples>/<item> не найдены.");
+
                     return samples;
                 }
 
@@ -947,12 +958,12 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionarySamples>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionarySamples>();
             }
         }
@@ -983,7 +994,7 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника правил обработки (get_processing_rules)
+
     public class DictionaryProcessingRules
     {
         public int rule_id { get; set; }
@@ -995,16 +1006,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public string section_name { get; set; } = string.Empty;
         public string section_title { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionaryProcessingRules> output, int count)
-        {
-            Console.WriteLine($"Dictionary Processing_rules");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var rule = output[i];
-                Console.WriteLine($"rule_id: {rule.rule_id}, rule_name: {rule.rule_name}, parameter_name: {rule.parameter_name}, parameter_description: {rule.parameter_description}, parameter_type_name: {rule.parameter_type_name}, parameter_type_title: {rule.parameter_type_title}, section_name: {rule.section_name}, section_title: {rule.section_title}\n");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryProcessingRules> Parse(string xmlContent)
         {
@@ -1065,39 +1066,29 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return rules;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryProcessingRules>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryProcessingRules>();
             }
         }
     }
 
-    // Класс для справочника блокирующихся сервисов (get_services_all_interlocks)
+
     public class DictionaryServicesAllInterlocks
     {
         public string serv_id { get; set; } = string.Empty;
         public string blocked_serv { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionaryServicesAllInterlocks> output, int count)
-        {
-            Console.WriteLine($"Dictionary Services All Interlocks");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var interlock = output[i];
-                Console.WriteLine($"serv_id: {interlock.serv_id}, blocked_serv: {interlock.blocked_serv}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryServicesAllInterlocks> Parse(string xmlContent)
         {
@@ -1146,24 +1137,24 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return interlocks;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryServicesAllInterlocks>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryServicesAllInterlocks>();
             }
         }
     }
 
-    // Класс для справочника маркетинговых комплексов (get_marketing_complex_composition)
+
     public class DictionaryMarketingComplex
     {
         public string complex_id { get; set; } = string.Empty;
@@ -1174,16 +1165,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         public string transport_id { get; set; } = string.Empty;
         public string main_service { get; set; } = string.Empty;
 
-        public static void PrintToConsole(List<DictionaryMarketingComplex> output, int count)
-        {
-            Console.WriteLine($"Dictionary Marketing_complex_composition");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var item = output[i];
-                Console.WriteLine($"complex_id: {item.complex_id}, service_id: {item.service_id}, price: {item.price}, localization_id: {item.localization_id}, biomaterial_id: {item.biomaterial_id}, transport_id: {item.transport_id}, main_service: {item.main_service}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryMarketingComplex> Parse(string xmlContent)
         {
@@ -1242,18 +1223,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return compositions;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryMarketingComplex>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryMarketingComplex>();
             }
         }
@@ -1295,23 +1276,13 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника групп услуг-аналогов (get_services_group_analogs)
+
     public class DictionaryServicesGroupAnalogs
     {
         public string group_id { get; set; } = string.Empty;
         public string analog_group_id { get; set; } = string.Empty;
         public int archive { get; set; }
 
-        public static void PrintToConsole(List<DictionaryServicesGroupAnalogs> output, int count)
-        {
-            Console.WriteLine($"Dictionary Services_group_analogs");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var analog = output[i];
-                Console.WriteLine($"group_id: {analog.group_id}, analog_group_id: {analog.analog_group_id}, archive: {analog.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryServicesGroupAnalogs> Parse(string xmlContent)
         {
@@ -1349,18 +1320,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return analogs;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryServicesGroupAnalogs>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryServicesGroupAnalogs>();
             }
         }
@@ -1375,23 +1346,13 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника автодобавляемых услуг (get_service_auto_insert)
+
     public class DictionaryServiceAutoInsert
     {
         public string service_id { get; set; } = string.Empty;
         public string auto_service_id { get; set; } = string.Empty;
         public int archive { get; set; }
 
-        public static void PrintToConsole(List<DictionaryServiceAutoInsert> output, int count)
-        {
-            Console.WriteLine($"Dictionary Service_auto_insert");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var autoInsert = output[i];
-                Console.WriteLine($"service_id: {autoInsert.service_id}, auto_service_id: {autoInsert.auto_service_id}, archive: {autoInsert.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryServiceAutoInsert> Parse(string xmlContent)
         {
@@ -1432,18 +1393,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return autoInserts;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryServiceAutoInsert>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryServiceAutoInsert>();
             }
         }
@@ -1458,7 +1419,7 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника дополнительных тестов для услуг (get_services_supplementals)
+
     public class DictionaryServicesSupplementals
     {
         public string parent_id { get; set; } = string.Empty;
@@ -1478,8 +1439,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var doc = new System.Xml.XmlDocument();
                 doc.LoadXml(xmlContent);
 
-                // Обычно: ... <supplementals><item>...</item></supplementals>
-                // Но делаем устойчиво: ищем любые item где есть parent_id/test_id
+
                 var nodes = doc.SelectNodes("//*[local-name()='item' and (*[local-name()='parent_id'] or *[local-name()='test_id'])]");
                 if (nodes == null) return list;
 
@@ -1514,8 +1474,6 @@ namespace Laboratory.Gemotest.GemotestRequests
     }
 
 
-
-    // Класс для справочника лабораторных отделений (get_branches)
     public class DictionaryBranches
     {
         public string id { get; set; } = string.Empty;
@@ -1574,7 +1532,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                             archive = archiveValue
                         };
 
-                        // Парсинг phones
+
                         if (phonesNode != null)
                         {
                             var phoneNodes = phonesNode.SelectNodes("*[local-name()='item']");
@@ -1587,7 +1545,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                             }
                         }
 
-                        // Парсинг days
+
                         if (daysNode != null)
                         {
                             var dayNodes = daysNode.SelectNodes("*[local-name()='item']");
@@ -1628,18 +1586,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return branches;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryBranches>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryBranches>();
             }
         }
@@ -1654,23 +1612,13 @@ namespace Laboratory.Gemotest.GemotestRequests
         }
     }
 
-    // Класс для справочника цен (get_prices)
+
     public class DictionaryPrices
     {
         public string service_id { get; set; } = string.Empty;
         public float price { get; set; }
         public int archive { get; set; }
 
-        public static void PrintToConsole(List<DictionaryPrices> output, int count)
-        {
-            Console.WriteLine($"Dictionary Prices");
-            for (int i = 0; i < Math.Min(count, output.Count); i++)
-            {
-                var priceItem = output[i];
-                Console.WriteLine($"service_id: {priceItem.service_id}, price: {priceItem.price}, archive: {priceItem.archive}");
-            }
-            Console.WriteLine("\n");
-        }
 
         public static List<DictionaryPrices> Parse(string xmlContent)
         {
@@ -1709,18 +1657,18 @@ namespace Laboratory.Gemotest.GemotestRequests
                 }
                 else
                 {
-                    Console.WriteLine("Элементы <item> не найдены.");
+
                     return prices;
                 }
             }
             catch (XmlException ex)
             {
-                Console.WriteLine($"Ошибка парсинга: {ex.Message}");
+
                 return new List<DictionaryPrices>();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Общая ошибка: {ex.Message}");
+
                 return new List<DictionaryPrices>();
             }
         }

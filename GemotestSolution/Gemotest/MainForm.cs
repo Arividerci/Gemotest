@@ -75,8 +75,7 @@ namespace Gemotest
                 bool success = laboratoryGemotest.Gemotest.get_all_dictionary();
                 if (success)
                 {
-                    Dictionaries.Unpack(laboratoryGemotest.Gemotest.filePath);
-                    MessageBox.Show($"Справочники загружены и распарсены. Продуктов: {Dictionaries.Directory.Count}", "Успех");
+                    laboratoryGemotest.Dicts.Unpack(laboratoryGemotest.Gemotest.filePath);
                 }
                 else
                 {

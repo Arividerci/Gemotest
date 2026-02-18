@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
-using Laboratory.Gemotest.GemotestRequests; 
+using Laboratory.Gemotest.GemotestRequests;
 
 namespace Laboratory.Gemotest.SourseClass
 {
@@ -75,7 +75,9 @@ namespace Laboratory.Gemotest.SourseClass
         public List<GemotestBioMaterial> BioMaterials { get; set; }
         public List<Product> DefectProductList { get; set; }
         public string PriceList { get; set; }
-        
+
+        [XmlIgnore]
+        public Dictionaries Dicts { get; set; }
         public List<GemotestProductDetail> Products { get; set; }
         public string DefectsMessages { get; set; }
         public GemotestOrderDetail() : base()
@@ -90,21 +92,17 @@ namespace Laboratory.Gemotest.SourseClass
         [Serializable]
         public class GemotestProductDetail
         {
-            /// <summary>
-            /// Идентификатор позиции заказа
-            /// </summary>
+
+
             public string OrderProductGuid;
-            /// <summary>
-            /// Идентификатор продукта
-            /// </summary>
+
+
             public string ProductId;
-            /// <summary>
-            /// Код продукта
-            /// </summary>
+
+
             public string ProductCode;
-            /// <summary>
-            /// Название продукта
-            /// </summary>
+
+
             public string ProductName;
             public Product AsProduct()
             {
@@ -113,77 +111,83 @@ namespace Laboratory.Gemotest.SourseClass
             }
         }
 
-        private List<DictionaryBiomaterials> ResolveBiomaterialsForService(DictionaryService service)
+                private List<DictionaryBiomaterials> ResolveBiomaterialsForService(DictionaryService service)
         {
             var result = new List<DictionaryBiomaterials>();
+            if (service == null)
+                return result;
 
-            // 1. Прямой biomaterial_id из Directory, если он есть и не "Drugoe"
+            if (Dicts == null)
+                return result;
+
             if (!string.IsNullOrEmpty(service.biomaterial_id) &&
-                service.biomaterial_id != "Drugoe")
+                !string.Equals(service.biomaterial_id, "Drugoe", StringComparison.OrdinalIgnoreCase))
             {
-                var biom = Dictionaries.Biomaterials
-                    .FirstOrDefault(b => b.id == service.biomaterial_id);
-                if (biom != null)
+                if (Dicts.Biomaterials.TryGetValue(service.biomaterial_id, out var biom) && biom != null)
                     result.Add(biom);
             }
 
-            // 2. service_type 0 → Service_parameters
-            if (service.service_type == 0 && Dictionaries.ServiceParameters != null)
-            {
-                var paramsList = Dictionaries.ServiceParameters
-                    .Where(p => p.service_id == service.id)
-                    .ToList();
 
-                if (paramsList.Any())
+            if (service.service_type == 0 && Dicts.ServiceParameters != null)
+            {
+                if (Dicts.ServiceParameters.TryGetValue(service.id, out var paramsList) &&
+                    paramsList != null && paramsList.Count > 0)
                 {
                     var ids = paramsList
                         .Select(p => p.biomaterial_id)
                         .Where(id => !string.IsNullOrEmpty(id))
-                        .Distinct();
+                        .Distinct(StringComparer.OrdinalIgnoreCase);
 
                     foreach (var id in ids)
                     {
-                        var biom = Dictionaries.Biomaterials.FirstOrDefault(b => b.id == id);
-                        if (biom != null && !result.Any(r => r.id == biom.id))
+                        if (Dicts.Biomaterials.TryGetValue(id, out var biom) && biom != null &&
+                            !result.Any(r => string.Equals(r.id, biom.id, StringComparison.OrdinalIgnoreCase)))
+                        {
                             result.Add(biom);
+                        }
                     }
                 }
             }
 
-            // 3. service_type 1/2 → Marketing_complex_composition
-            if ((service.service_type == 1 || service.service_type == 2) &&
-                Dictionaries.MarketingComplexComposition != null)
+
+            if (service.service_type == 1 || service.service_type == 2)
             {
-                Func<DictionaryMarketingComplex, bool> filter =
-                    service.service_type == 2
-                        ? new Func<DictionaryMarketingComplex, bool>(m => m.complex_id == service.id)
-                        : new Func<DictionaryMarketingComplex, bool>(m => m.service_id == service.id);
+                List<DictionaryMarketingComplex> complexItems = null;
 
-                var complexItems = Dictionaries.MarketingComplexComposition
-                    .Where(filter)
-                    .ToList();
+                if (service.service_type == 2)
+                {
+                    if (Dicts.MarketingComplexByComplexId != null)
+                        Dicts.MarketingComplexByComplexId.TryGetValue(service.id, out complexItems);
+                }
+                else
+                {
+                    if (Dicts.MarketingComplexByServiceId != null)
+                        Dicts.MarketingComplexByServiceId.TryGetValue(service.id, out complexItems);
+                }
 
-                if (complexItems.Any())
+                if (complexItems != null && complexItems.Count > 0)
                 {
                     var ids = complexItems
                         .Select(m => m.biomaterial_id)
                         .Where(id => !string.IsNullOrEmpty(id))
-                        .Distinct();
+                        .Distinct(StringComparer.OrdinalIgnoreCase);
 
                     foreach (var id in ids)
                     {
-                        var biom = Dictionaries.Biomaterials.FirstOrDefault(b => b.id == id);
-                        if (biom != null && !result.Any(r => r.id == biom.id))
+                        if (Dicts.Biomaterials.TryGetValue(id, out var biom) && biom != null &&
+                            !result.Any(r => string.Equals(r.id, biom.id, StringComparison.OrdinalIgnoreCase)))
+                        {
                             result.Add(biom);
+                        }
                     }
                 }
             }
 
-            // 4. Особый случай: biomaterial_id == "Drugoe"
-            if (service.biomaterial_id == "Drugoe" &&
+
+            if (string.Equals(service.biomaterial_id, "Drugoe", StringComparison.OrdinalIgnoreCase) &&
                 !string.IsNullOrEmpty(service.other_biomaterial))
             {
-                if (!result.Any(b => b.id == "Drugoe"))
+                if (!result.Any(b => string.Equals(b.id, "Drugoe", StringComparison.OrdinalIgnoreCase)))
                 {
                     result.Add(new DictionaryBiomaterials
                     {
@@ -198,18 +202,15 @@ namespace Laboratory.Gemotest.SourseClass
         }
 
 
-        /// <summary>
-        /// Добавляет биоматериалы, id которых совпадает с biomaterial_id в выбранных продуктах Products.
-        /// Связывает с AllProducts (Dictionaries.Directory) по ProductId, затем находит DictionaryBiomaterials по biomaterial_id.
-        /// Добавляет в BioMaterials с Mandatory = {индекс продукта}.
-        /// Если биоматериал уже существует, добавляет индекс продукта в Mandatory/Chosen.
-        /// </summary>
         public void AddBiomaterialsFromProducts()
         {
             if (Products == null || Products.Count == 0)
                 return;
 
-            if (Dictionaries.Directory == null || Dictionaries.Biomaterials == null)
+            if (Dicts == null)
+                return;
+
+            if (Dicts.Directory == null || Dicts.Biomaterials == null)
                 return;
 
             if (BioMaterials == null)
@@ -217,20 +218,19 @@ namespace Laboratory.Gemotest.SourseClass
             else
                 BioMaterials.Clear();
 
-            // 1. Собираем связи «продукт -> биоматериалы»
+
             for (int productIndex = 0; productIndex < Products.Count; productIndex++)
             {
                 var product = Products[productIndex];
 
-                var service = Dictionaries.Directory.FirstOrDefault(s => s.id == product.ProductId);
-                if (service == null)
+                if (!Dicts.Directory.TryGetValue(product.ProductId, out var service) || service == null)
                     continue;
 
                 var biomaterialsForService = ResolveBiomaterialsForService(service);
                 if (!biomaterialsForService.Any())
                     continue;
 
-                // Комплексы (service_type == 2) – все биоматериалы обязательные
+
                 bool allMandatory = service.service_type == 2;
 
                 foreach (var biom in biomaterialsForService)
@@ -259,7 +259,7 @@ namespace Laboratory.Gemotest.SourseClass
                     }
                     else
                     {
-                        // Для типов 0 и 1: варианты, из которых надо выбрать один
+
                         if (!existing.Another.Contains(productIndex) &&
                             !existing.Chosen.Contains(productIndex) &&
                             !existing.Mandatory.Contains(productIndex))
@@ -272,14 +272,14 @@ namespace Laboratory.Gemotest.SourseClass
 
             for (int i = 0; i < Products.Count; i++)
             {
-                // Если уже есть обязательный или выбранный – не трогаем
+
                 bool alreadyChosen = BioMaterials.Any(b =>
                     b.Chosen.Contains(i) || b.Mandatory.Contains(i));
 
                 if (alreadyChosen)
                     continue;
 
-                // Берём первый доступный вариант из Another
+
                 var candidate = BioMaterials.FirstOrDefault(b => b.Another.Contains(i));
                 if (candidate != null)
                 {
@@ -319,7 +319,7 @@ namespace Laboratory.Gemotest.SourseClass
             {
                 new XmlSerializer(typeof(GemotestOrderDetail)).Serialize(memStream, this);
                 memStream.Position = 0;
-                return Encoding.UTF8.GetString(memStream.ToArray()); // Исправлено: ToArray() вместо GetBuffer()
+                return Encoding.UTF8.GetString(memStream.ToArray());
             }
         }
         public override BaseOrderDetail Unpack(string _Source)
@@ -337,7 +337,7 @@ namespace Laboratory.Gemotest.SourseClass
 
         internal void DeleteProduct(int productIndex)
         {
-            //Удаляем биоматериалы
+
             List<GemotestBioMaterial> BioMaterialsForDelete = new List<GemotestBioMaterial>();
             foreach (GemotestBioMaterial bioMaterial in BioMaterials)
             {
@@ -384,6 +384,8 @@ namespace Laboratory.Gemotest.SourseClass
         {
             var result = new List<string>();
 
+            if (Dicts == null)
+                return result;
             if (Products == null)
                 return result;
 
@@ -392,10 +394,7 @@ namespace Laboratory.Gemotest.SourseClass
                 if (string.IsNullOrEmpty(p.ProductId))
                     continue;
 
-                var service = Dictionaries.Directory?
-                    .FirstOrDefault(s => s.id == p.ProductId);
-
-                if (service == null)
+                if (!Dicts.Directory.TryGetValue(p.ProductId, out var service) || service == null)
                     continue;
 
                 if (service.service_type == 2)
@@ -403,11 +402,9 @@ namespace Laboratory.Gemotest.SourseClass
                     if (!result.Contains(p.ProductId))
                         result.Add(p.ProductId);
 
-                    var complexItems = Dictionaries.MarketingComplexComposition?
-                        .Where(m => m.complex_id == p.ProductId)
-                        .ToList();
-
-                    if (complexItems != null && complexItems.Count > 0)
+                    if (Dicts.MarketingComplexByComplexId != null &&
+                        Dicts.MarketingComplexByComplexId.TryGetValue(p.ProductId, out var complexItems) &&
+                        complexItems != null && complexItems.Count > 0)
                     {
                         foreach (var item in complexItems)
                         {
@@ -428,15 +425,6 @@ namespace Laboratory.Gemotest.SourseClass
 
             return result;
         }
-
-       /* var details = (GemotestOrderDetail)_Order.OrderDetail;
-
-        // Все сервисы, которые должны реально уйти в заказ
-        List<string> servicesForSend = details.GetServiceIdsForCreateOrder();
-
-        // дальше по servicesForSend заполняешь:
-        // - массив services (верхний список услуг)
-        // - services в order_samples (для проб)*/
 
 
         public void DeleteProductFromDetails(int productIndex)

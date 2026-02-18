@@ -26,26 +26,18 @@ namespace Laboratory.Gemotest
         public LocalOptionsGemotest LocalOptions { get; set; }
         public OptionsGemotest Options { get; set; }
 
+
+        public Dictionaries Dicts { get; } = new Dictionaries();
         private Exception last_exception = new Exception("неизвестная ошибка");
 
-        private LaboratoryGemotestGUI _laboratoryGUI;
-        public LaboratoryGemotestGUI laboratoryGUI
-        {
-            get { return _laboratoryGUI; }
-        }
-
-        public bool IsInitialized
-        {
-            get { return _laboratoryGUI != null; }
-        }
-
+        private LaboratoryGemotestGUI laboratoryGUI;
         public LaboratoryType GetLaboratoryType()
         {
             return (LaboratoryType)24;
-            
+
         }
 
-       
+
         private void EnsureProductsLoaded()
         {
             if (ProductsGemotest != null) return;
@@ -60,9 +52,9 @@ namespace Laboratory.Gemotest
                 Gemotest.get_all_dictionary();
             }
 
-            if (Dictionaries.Directory == null || Dictionaries.Directory.Count == 0)
+            if (Dicts.Directory == null || Dicts.Directory.Count == 0)
             {
-                bool unpackSuccess = Dictionaries.Unpack(Gemotest.filePath);
+                bool unpackSuccess = Dicts.Unpack(Gemotest.filePath);
                 if (!unpackSuccess)
                 {
                     Console.WriteLine("Ошибка распаковки справочников.");
@@ -91,7 +83,7 @@ namespace Laboratory.Gemotest
                  !string.IsNullOrEmpty(service.id) &&
                  !string.IsNullOrEmpty(service.code) &&
                  !string.IsNullOrEmpty(service.name))
-             .Select(service => new ProductGemotest(service, ""))
+             .Select(service => new ProductGemotest(service, "", Dicts))
              .ToList();
         }
 
@@ -101,7 +93,7 @@ namespace Laboratory.Gemotest
 
             ProductsCollection pC = new ProductsCollection();
 
-            foreach (var p in product) 
+            foreach (var p in product)
             {
                 if (p.IsBlocked)
                     continue;
@@ -126,10 +118,10 @@ namespace Laboratory.Gemotest
 
         public Product ChooseProduct(Product _SourceProduct = null) {
 
-            return null; 
+            return null;
         }
 
-        
+
         public BaseOrderDetail CreateOrderDetail() { return new GemotestOrderDetail(); }
 
         public void FillDefaultOrderDetail(BaseOrderDetail _OrderDetail, OrderItemsCollection _Items)
@@ -141,12 +133,12 @@ namespace Laboratory.Gemotest
             int index = 0;
             foreach (var item in _Items)
             {
-                var prod = item.Product; 
+                var prod = item.Product;
 
                 details.Products.Add(new GemotestProductDetail
                 {
                     OrderProductGuid = index.ToString(),
-                    ProductId = prod.ID,      
+                    ProductId = prod.ID,
                     ProductCode = prod.Code,
                     ProductName = prod.Name
                 });
@@ -154,6 +146,7 @@ namespace Laboratory.Gemotest
                 index++;
             }
 
+            details.Dicts = Dicts;
             details.AddBiomaterialsFromProducts();
         }
 
@@ -174,7 +167,8 @@ namespace Laboratory.Gemotest
                     });
                 }
             }
-            details.AddBiomaterialsFromProducts();  
+            details.Dicts = Dicts;
+            details.AddBiomaterialsFromProducts();
             details.DeleteObsoleteDetails();
             bool readOnly = true;
             ResultsCollection currentResults = new ResultsCollection();
@@ -216,7 +210,6 @@ namespace Laboratory.Gemotest
             laboratoryGUI.CreateOrderModelForGUI(true, _Order, ref resultsCollection, ref orderModelForGUI);
         }
 
-        //--------------------------------------------------------------------//--------------------------------------------------------------------
 
         public bool ShowSystemOptions(ref string _SystemOptions)
         {
@@ -314,28 +307,28 @@ namespace Laboratory.Gemotest
                         Options.Contractor, Options.Contractor_Code, Options.Salt);
                 }
 
-                // Обновление справочников
+
                 if (!Gemotest.all_dictionaries_is_valid())
                 {
                     bool ok = Gemotest.get_all_dictionary();
                     if (!ok) return false;
                 }
 
-                // Распаковка справочники в память
-                bool unpackOk = Dictionaries.Unpack(Gemotest.filePath);
+
+                bool unpackOk = Dicts.Unpack(Gemotest.filePath);
                 if (!unpackOk)
                 {
                     Console.WriteLine("Ошибка распаковки");
                     return false;
-                    
+
                 }
-                _laboratoryGUI = new LaboratoryGemotestGUI();
+                laboratoryGUI = new LaboratoryGemotestGUI();
                 EnsureProductsLoaded();
                 AllProducts = GetProducts();
 
-                _laboratoryGUI.SetAssignedModules(this, AllProducts, LocalOptions, Options);
+                laboratoryGUI.SetAssignedModules(this, AllProducts, LocalOptions, Options);
                 Console.WriteLine("+");
-               
+
 
                 SiMed.Clinic.Logger.LogEvent.RemoveOldFilesFromLog("Gemotest", 30);
                 return true;
@@ -346,7 +339,7 @@ namespace Laboratory.Gemotest
                 return false;
             }
         }
-        //--------------------------------------------------------------------//--------------------------------------------------------------------
+
 
         public void SetNumerator(INumerator _Numerator) { }
 
@@ -387,9 +380,7 @@ namespace Laboratory.Gemotest
         }
 
 
-
-       
-        public bool CheckResult(Order _Order, ref ResultsCollection _Results) { 
+        public bool CheckResult(Order _Order, ref ResultsCollection _Results) {
             _Results = null;
             return false;
         }

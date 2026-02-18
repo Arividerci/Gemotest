@@ -22,6 +22,8 @@ namespace Laboratory.Gemotest.GemotestRequests
         private readonly string _login;
         private readonly string _password;
 
+        private Dictionaries _dictionaries;
+
         public GemotestOrderSender(string url, string contractor, string salt, string login, string password)
         {
             _url = url ?? throw new ArgumentNullException(nameof(url));
@@ -49,6 +51,8 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 var details = order.OrderDetail as GemotestOrderDetail;
                 if (details == null) throw new InvalidOperationException("OrderDetail должен быть GemotestOrderDetail.");
+
+                _dictionaries = details.Dicts ?? throw new InvalidOperationException("Dictionaries не назначены: перед отправкой заказа нужно установить details.Dicts (из LaboratoryGemotest.Dicts).");
                 if (details.Products == null || details.Products.Count == 0) throw new InvalidOperationException("В заказе нет ни одной услуги.");
 
                 var patient = order.Patient ?? new Patient();
@@ -57,7 +61,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                     ? "SiMed_" + DateTime.Now.ToString("yyyyMMddHHmmss")
                     : order.Number;
 
-                string orderNum = ""; // по доке допускается пусто
+                string orderNum = "";
 
                 DateTime birthDate = patient.Birthday == default(DateTime) ? DateTime.Today : patient.Birthday;
 
@@ -69,10 +73,10 @@ namespace Laboratory.Gemotest.GemotestRequests
                     birthDate,
                     _salt);
 
-                // 1) вывод выбора пользователя
+
                 DumpUserSelection(details);
 
-                // 2) строим rows (samples_services + marketing composition)
+
                 var rows = BuildSampleServiceRows(details);
 
                 if (rows.Count == 0)
@@ -80,7 +84,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 DumpRows(rows);
 
-                // 3) упаковка (минимизация контейнеров)
+
                 var tubes = GemotestSamplePacker.Pack(rows);
 
                 if (tubes == null || tubes.Count == 0)
@@ -88,7 +92,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 DumpPacking(tubes);
 
-                // 4) get_sample_identifiers на число контейнеров
+
                 long rangeStart, rangeEnd;
                 GetSampleIdentifiersRange(tubes.Count, out rangeStart, out rangeEnd);
 
@@ -96,13 +100,13 @@ namespace Laboratory.Gemotest.GemotestRequests
                 if (available < tubes.Count)
                     throw new InvalidOperationException("get_sample_identifiers вернул недостаточно идентификаторов.");
 
-                // 5) назначаем идентификаторы (parent раньше child)
+
                 AssignIdentifiers(tubes, rangeStart);
 
-                // 6) top-level services: что выбрал пользователь (не раскрываем состав)
+
                 var topServices = BuildTopLevelServices(details);
 
-                // 7) создаём XML create_order (Вариант А: order_samples + services в пробах)
+
                 string xml = BuildCreateOrderEnvelopeVariantA(
                     extNum,
                     orderNum,
@@ -138,9 +142,7 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
-        // =========================
-        // Fix helpers (int/int?)
-        // =========================
+
         private static int ToInt(object value, int defaultValue)
         {
             if (value == null) return defaultValue;
@@ -191,8 +193,8 @@ namespace Laboratory.Gemotest.GemotestRequests
 
         private static int MapGender(object sexEnum)
         {
-            // без привязки к конкретным значениям enum Sex
-            // 1=male, 2=female (как в примерах доки)
+
+
             string s = sexEnum == null ? "" : sexEnum.ToString();
             s = (s ?? "").ToLowerInvariant();
 
@@ -229,9 +231,12 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var prod = details.Products[i];
                 if (prod == null || string.IsNullOrEmpty(prod.ProductId)) continue;
 
-                var svc = Dictionaries.Directory.FirstOrDefault(s => s.id == prod.ProductId);
-                int? serviceType =  svc.service_type;
-                if (serviceType == 3 || serviceType == 4) continue;
+                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out var svc) || svc == null)
+                    continue;
+
+                int? serviceType = svc.service_type;
+                if (serviceType == 3 || serviceType == 4)
+                    continue;
 
                 res.Add(new SoapTopServiceItem
                 {
@@ -249,7 +254,7 @@ namespace Laboratory.Gemotest.GemotestRequests
         {
             var map = new Dictionary<int, string>();
 
-            // Mandatory сильнее Chosen
+
             for (int b = 0; b < details.BioMaterials.Count; b++)
             {
                 var bio = details.BioMaterials[b];
@@ -257,7 +262,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 for (int i = 0; i < bio.Mandatory.Count; i++)
                 {
-                    int idx = ToInt(bio.Mandatory[i], -1); // FIX: int? -> int
+                    int idx = ToInt(bio.Mandatory[i], -1);
                     if (idx < 0) continue;
                     map[idx] = bio.Id ?? "";
                 }
@@ -270,7 +275,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 for (int i = 0; i < bio.Chosen.Count; i++)
                 {
-                    int idx = ToInt(bio.Chosen[i], -1); // FIX: int? -> int
+                    int idx = ToInt(bio.Chosen[i], -1);
                     if (idx < 0) continue;
 
                     if (!map.ContainsKey(idx))
@@ -283,8 +288,10 @@ namespace Laboratory.Gemotest.GemotestRequests
 
         private List<SampleServiceRow> BuildSampleServiceRows(GemotestOrderDetail details)
         {
-            var rows = new List<SampleServiceRow>();
+            if (_dictionaries == null)
+                throw new InvalidOperationException("Dictionaries не инициализированы в GemotestOrderSender.");
 
+            var rows = new List<SampleServiceRow>();
             var chosenBio = BuildChosenBiomaterialByProductIndex(details);
 
             for (int i = 0; i < details.Products.Count; i++)
@@ -292,18 +299,21 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var prod = details.Products[i];
                 if (prod == null || string.IsNullOrEmpty(prod.ProductId)) continue;
 
-                var svc = Dictionaries.Directory.FirstOrDefault(s => s.id == prod.ProductId);
-                int? serviceType = svc.service_type;
-                if (serviceType == 3 || serviceType == 4) continue;
+                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out var svc) || svc == null)
+                    continue;
 
-                // маркетинговый комплекс
+                int? serviceType = svc.service_type;
+                if (serviceType == 3 || serviceType == 4)
+                    continue;
+
+
                 if (serviceType == 2)
                 {
                     AddRowsForMarketingComplex(prod.ProductId, rows);
                     continue;
                 }
 
-                // обычная услуга
+
                 string biomaterialId = chosenBio.ContainsKey(i) ? chosenBio[i] : "";
                 AddRowsForSimpleService(prod.ProductId, biomaterialId, rows, "", "");
             }
@@ -311,13 +321,17 @@ namespace Laboratory.Gemotest.GemotestRequests
             return rows;
         }
 
-        private void AddRowsForMarketingComplex(string complexId, List<SampleServiceRow> rows)
+                private void AddRowsForMarketingComplex(string complexId, List<SampleServiceRow> rows)
         {
-            // FIX: убрали is_blocked (его нет)
-            // FIX: гарантируем ToList(), чтобы был comp.Count (а не method group Count())
-            var comp = Dictionaries.MarketingComplexComposition
-                .Where(x => x.complex_id == complexId)
-                .ToList();
+            if (string.IsNullOrEmpty(complexId))
+                return;
+
+            if (_dictionaries.MarketingComplexByComplexId == null ||
+                !_dictionaries.MarketingComplexByComplexId.TryGetValue(complexId, out var comp) ||
+                comp == null || comp.Count == 0)
+            {
+                return;
+            }
 
             for (int i = 0; i < comp.Count; i++)
             {
@@ -332,16 +346,25 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
-        private void AddRowsForSimpleService(
+                private void AddRowsForSimpleService(
             string serviceId,
             string biomaterialId,
             List<SampleServiceRow> rows,
             string complexId,
             string forcedLocalizationId)
         {
-            var list = Dictionaries.SamplesServices
-                .Where(p => p.service_id == serviceId)
-                .ToList();
+            if (string.IsNullOrEmpty(serviceId))
+                return;
+
+            if (_dictionaries.SamplesServices == null ||
+                !_dictionaries.SamplesServices.TryGetValue(serviceId, out var baseList) ||
+                baseList == null)
+            {
+                baseList = new List<DictionarySamplesServices>();
+            }
+
+
+            var list = baseList;
 
             if (!string.IsNullOrEmpty(biomaterialId))
                 list = list.Where(p => string.Equals(p.biomaterial_id ?? "", biomaterialId, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -349,21 +372,21 @@ namespace Laboratory.Gemotest.GemotestRequests
             if (!string.IsNullOrEmpty(forcedLocalizationId))
                 list = list.Where(p => string.Equals(p.localization_id ?? "", forcedLocalizationId, StringComparison.OrdinalIgnoreCase)).ToList();
 
+
             if (list.Count == 0)
-                list = Dictionaries.SamplesServices.Where(p => p.service_id == serviceId).ToList();
+                list = baseList;
 
             for (int i = 0; i < list.Count; i++)
             {
                 var p = list[i];
 
-                // FIX: sample_id/service_count/primary_sample_id могут быть int или int?
                 int execSampleId = ToInt(p.sample_id, 0);
                 int serviceCount = ToInt(p.service_count, 1);
 
-                int primaryRaw = ToInt(p.primary_sample_id, 0); // FIX: без .HasValue/.Value
+                int primaryRaw = ToInt(p.primary_sample_id, 0);
                 int? primarySampleId = primaryRaw > 0 ? (int?)primaryRaw : null;
 
-                var execSample = Dictionaries.Samples.FirstOrDefault(s => ToInt(s.id, -1) == execSampleId);
+                _dictionaries.Samples.TryGetValue(execSampleId.ToString(CultureInfo.InvariantCulture), out var execSample);
 
                 string execName = execSample != null ? (execSample.name ?? "") : "";
                 string execTransport = execSample != null ? (execSample.transport_id ?? "") : "";
@@ -375,7 +398,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 if (primarySampleId.HasValue)
                 {
-                    var primSample = Dictionaries.Samples.FirstOrDefault(s => ToInt(s.id, -1) == primarySampleId.Value);
+                    _dictionaries.Samples.TryGetValue(primarySampleId.Value.ToString(CultureInfo.InvariantCulture), out var primSample);
                     primName = primSample != null ? (primSample.name ?? "") : "";
                     primTransport = primSample != null ? (primSample.transport_id ?? "") : "";
                     primUtilize = primSample != null && primSample.utilize;
@@ -411,7 +434,7 @@ namespace Laboratory.Gemotest.GemotestRequests
         {
             if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-            // по доке: sha1(contractor + salt)
+
             string hash = BuildContractorHash(_contractor, _salt);
 
             string xml = BuildGetSampleIdentifiersEnvelope(count, _contractor, hash);
@@ -544,9 +567,9 @@ namespace Laboratory.Gemotest.GemotestRequests
               .Append(SecurityElement.Escape(hash ?? ""))
               .Append("</hash>");
 
-            // в примерах doctor — строка
+
             sb.Append("<doctor xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(comment ?? "")) // если хочешь — сюда ФИО врача
+              .Append(SecurityElement.Escape(comment ?? ""))
               .Append("</doctor>");
 
             sb.Append("<order_status xsi:type=\"xsd:integer\">0</order_status>");
@@ -580,7 +603,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             sb.Append("</patient>");
 
-            // top services
+
             sb.Append("<services xsi:type=\"urn:servicesArray\" soapenc:arrayType=\"urn:services[")
               .Append(svcCount.ToString(CultureInfo.InvariantCulture))
               .Append("]\">");
@@ -605,7 +628,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             sb.Append("</services>");
 
-            // order_samples
+
             sb.Append("<order_samples xsi:type=\"urn:order_sampleArray\" soapenc:arrayType=\"urn:order_sample[")
               .Append(tubesCount.ToString(CultureInfo.InvariantCulture))
               .Append("]\">");
@@ -638,7 +661,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                           .Append("</primary_sample_identifier>");
                     }
 
-                    // по доке эти поля могут быть nil/empty
+
                     sb.Append("<microbiology_biomaterial_id>")
                       .Append(SecurityElement.Escape(t.MicroBioBiomaterialId ?? ""))
                       .Append("</microbiology_biomaterial_id>");
@@ -814,7 +837,7 @@ namespace Laboratory.Gemotest.GemotestRequests
             {
                 var p = details.Products[i];
 
-                var svc = Dictionaries.Directory.FirstOrDefault(x => x.id == p.ProductId);
+                _dictionaries.Directory.TryGetValue(p.ProductId ?? "", out var svc);
                 if (svc != null)
                     Console.WriteLine($"    -> type={svc.type}, service_type={(svc.service_type.HasValue ? svc.service_type.Value.ToString() : "null")}");
 

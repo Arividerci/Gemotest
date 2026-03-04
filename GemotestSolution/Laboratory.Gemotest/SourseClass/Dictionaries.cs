@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -616,8 +616,12 @@ namespace Laboratory.Gemotest.GemotestRequests
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(xmlContent);
 
-                var serviceNodes = doc.SelectNodes("//*[local-name()='services']/*[local-name()='item'] | //*[local-name()='item']");
-
+                var serviceNodes = doc.SelectNodes("//*[local-name()='services']/*[local-name()='item']");
+                if (serviceNodes == null || serviceNodes.Count == 0)
+                {
+                    // fallback: если структура отличается, берем только те item, где реально есть execution_period
+                    serviceNodes = doc.SelectNodes("//*[local-name()='item'][*[local-name()='execution_period'] and *[local-name()='id'] and *[local-name()='code'] and *[local-name()='name']]");
+                }
                 if (serviceNodes != null && serviceNodes.Count > 0)
                 {
                     foreach (XmlNode node in serviceNodes)

@@ -1,4 +1,4 @@
-﻿using Laboratory.Gemotest.GemotestRequests;
+using Laboratory.Gemotest.GemotestRequests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,7 @@ namespace Laboratory.Gemotest.SourseClass
     public class ProductGemotest : Product
     {
         private readonly Dictionaries _dicts;
-public int Type { get; set; }
+        public int Type { get; set; }
         public int? ServiceType { get; set; }
         public bool IsBlocked { get; set; }
         public float Price { get; set; }
@@ -23,11 +23,11 @@ public int Type { get; set; }
         public ProductGemotest(DictionaryService service, string other_biomaterial = null, Dictionaries dicts = null)
         {
             _dicts = dicts;
-ID = service.id;
+            ID = service.id;
             Code = service.code;
             Name = service.name;
             Duration = service.execution_period;
-            DurationInfo = "Срок выполнения услуги в днях";
+            DurationInfo = service.execution_period > 0 ? $"{service.execution_period} дн." : string.Empty;
             Type = service.type;
             ServiceType = service.service_type;
             IsBlocked = service.is_blocked || (service.service_type == 3);
@@ -41,7 +41,7 @@ ID = service.id;
         private void LoadRelatedData(DictionaryService service, string other_biomaterial)
         {
             if (_dicts == null) return;
-if (!string.IsNullOrEmpty(service.localization_id))
+            if (!string.IsNullOrEmpty(service.localization_id))
             {
                 if (_dicts.Localization.TryGetValue(service.localization_id, out var loc) && loc != null)
                     Localization = new List<DictionaryLocalization> { loc };
@@ -100,10 +100,10 @@ if (!string.IsNullOrEmpty(service.localization_id))
             }
         }
 
-                private void LoadBiomaterialsFromMarketingComplex(DictionaryService service)
+        private void LoadBiomaterialsFromMarketingComplex(DictionaryService service)
         {
             if (_dicts == null) return;
-if (service == null || string.IsNullOrEmpty(service.id))
+            if (service == null || string.IsNullOrEmpty(service.id))
                 return;
 
             List<DictionaryMarketingComplex> complexItems = null;
@@ -214,17 +214,6 @@ if (service == null || string.IsNullOrEmpty(service.id))
             }
 
             Console.WriteLine("=== Конец продукта ===\n");
-        }
-
-        public static void PrintAllProductsRelatedData(List<ProductGemotest> products)
-        {
-            Console.WriteLine("=== Все продукты и их связанные данные (Type 0/1/2) ===");
-            var relevant = products.Where(p => p.ServiceType != 3 && !p.IsBlocked).Take(10).ToList();
-            foreach (var p in relevant)
-            {
-                p.PrintRelatedData();
-            }
-            Console.WriteLine("=== Конец списка ===");
         }
     }
 }

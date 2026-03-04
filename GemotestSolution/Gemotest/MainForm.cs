@@ -43,7 +43,7 @@ namespace Gemotest
         {
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls | (SecurityProtocolType)3072;
             InitializeComponent();
-
+            AllocConsole();
             laboratoryGemotest = new LaboratoryGemotest();
 
         }

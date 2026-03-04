@@ -216,7 +216,6 @@ namespace Laboratory.Gemotest.Options
             {
                 do
                 {
-                    // Устанавливаем поля перед запросом
                     this.chunk = currentChunk;
                     this.size = chunkSize;
 
@@ -302,7 +301,6 @@ namespace Laboratory.Gemotest.Options
                     arrayTypeAttr.Value = $"ns2:Map[{allItemXmls.Count}]";
                 }
 
-                // Очистка старых item
                 fullElementsNode.RemoveAll();
 
                 // Добавление всех item
@@ -318,7 +316,6 @@ namespace Laboratory.Gemotest.Options
                     }
                 }
 
-                // Обновление chunk: current=1, count=1
                 XmlNode fullChunkNode = fullDoc.SelectSingleNode("//chunk");
                 if (fullChunkNode != null)
                 {

@@ -1,4 +1,4 @@
-﻿namespace Laboratory.Gemotest.Options
+namespace Laboratory.Gemotest.Options
 {
     partial class OptionsFormsGemotest
     {
@@ -39,6 +39,9 @@
             this.contractorCode_label = new System.Windows.Forms.Label();
             this.contractorCode_textBox = new System.Windows.Forms.TextBox();
             this.go_button = new System.Windows.Forms.Button();
+            this.check_button = new System.Windows.Forms.Button();
+            this.check_status_label = new System.Windows.Forms.Label();
+            this.check_status_value = new System.Windows.Forms.Label();
             this.key_label = new System.Windows.Forms.Label();
             this.key_textBox = new System.Windows.Forms.TextBox();
             this.captionLabel = new System.Windows.Forms.Label();
@@ -137,6 +140,38 @@
             this.go_button.UseVisualStyleBackColor = true;
             this.go_button.Click += new System.EventHandler(this.go_button_Click);
             // 
+            // check_button
+            // 
+            this.check_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.check_button.Location = new System.Drawing.Point(90, 340);
+            this.check_button.Name = "check_button";
+            this.check_button.Size = new System.Drawing.Size(160, 35);
+            this.check_button.TabIndex = 3;
+            this.check_button.Text = "Проверка связи";
+            this.check_button.UseVisualStyleBackColor = true;
+            this.check_button.Click += new System.EventHandler(this.check_button_Click);
+            // 
+            // check_status_label
+            // 
+            this.check_status_label.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.check_status_label.AutoSize = true;
+            this.check_status_label.Location = new System.Drawing.Point(24, 315);
+            this.check_status_label.Name = "check_status_label";
+            this.check_status_label.Size = new System.Drawing.Size(109, 20);
+            this.check_status_label.TabIndex = 12;
+            this.check_status_label.Text = "Статус связи:";
+            // 
+            // check_status_value
+            // 
+            this.check_status_value.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.check_status_value.AutoSize = true;
+            this.check_status_value.Location = new System.Drawing.Point(139, 315);
+            this.check_status_value.Name = "check_status_value";
+            this.check_status_value.Size = new System.Drawing.Size(121, 20);
+            this.check_status_value.TabIndex = 13;
+            this.check_status_value.Text = "не проверялось";
+
+            // 
             // key_label
             // 
             this.key_label.AutoSize = true;
@@ -191,6 +226,9 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(703, 400);
+            this.Controls.Add(this.check_status_value);
+            this.Controls.Add(this.check_status_label);
+            this.Controls.Add(this.check_button);
             this.Controls.Add(this.go_button);
             this.Controls.Add(this.connectionGroupBox);
             this.Controls.Add(this.captionLabel);
@@ -223,6 +261,10 @@
         private System.Windows.Forms.Button go_button;
         private System.Windows.Forms.Label key_label;
         private System.Windows.Forms.TextBox key_textBox;
+
+        private System.Windows.Forms.Button check_button;
+        private System.Windows.Forms.Label check_status_label;
+        private System.Windows.Forms.Label check_status_value;
 
         // новые элементы
         private System.Windows.Forms.Label captionLabel;

@@ -47,11 +47,6 @@ namespace Laboratory.Gemotest
                 throw new InvalidOperationException("Gemotest не инициализирован. Вызовите SetOptions сначала.");
             }
 
-            if (!Gemotest.all_dictionaries_is_valid())
-            {
-                Gemotest.get_all_dictionary();
-            }
-
             if (Dicts.Directory == null || Dicts.Directory.Count == 0)
             {
                 bool unpackSuccess = Dicts.Unpack(Gemotest.filePath);
@@ -95,6 +90,11 @@ namespace Laboratory.Gemotest
 
             foreach (var p in product)
             {
+                // Печать ДО фильтров, чтобы понять, кого ты отсекаешь
+                Console.WriteLine(
+                    $"RAW: id={p.ID} code={p.Code} name={p.Name} blocked={p.IsBlocked} serviceType={p.ServiceType} duration={p.Duration}"
+                );
+
                 if (p.IsBlocked)
                     continue;
 
@@ -104,11 +104,14 @@ namespace Laboratory.Gemotest
                 if (string.IsNullOrEmpty(p.ID) || string.IsNullOrEmpty(p.Code) || string.IsNullOrEmpty(p.Name))
                     continue;
 
+                Console.WriteLine($"ADD: {p.Code} | {p.Name} | Duration={p.Duration}");
+
                 pC.Add(new Product
                 {
                     ID = p.ID,
                     Code = p.Code,
-                    Name = p.Name
+                    Name = p.Name,
+                    Duration = p.Duration
                 });
             }
 
@@ -151,26 +154,46 @@ namespace Laboratory.Gemotest
         }
 
 
-        public bool CreateOrder(Order _Order) {
+        public bool CreateOrder(Order _Order)
+        {
+            var status = _Order.State;
 
-            GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
-            if (details.Products.Count == 0)
+            if (laboratoryGUI == null)
             {
-                foreach (var item in _Order.Items)
+                if (!Init())
                 {
-                    details.Products.Add(new GemotestProductDetail()
-                    {
-                        OrderProductGuid = _Order.Items.IndexOf(item).ToString(),
-                        ProductId = item.Product.ID.ToString(),
-                        ProductCode = item.Product.Code,
-                        ProductName = item.Product.Name
-                    });
+                    MessageBox.Show("Ошибка инициализации модуля Гемотест", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
                 }
             }
-            details.Dicts = Dicts;
-            details.AddBiomaterialsFromProducts();
+
+            GemotestOrderDetail details = (GemotestOrderDetail)_Order.OrderDetail;
+            if (details == null)
+            {
+                last_exception = new Exception("OrderDetail не задан (ожидался GemotestOrderDetail).");
+                MessageBox.Show(last_exception.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            // В CreateOrder НЕ отправляем заказ: только переносим выбранные услуги в OrderDetail и открываем GUI.
+            // Канонический источник услуг для дальнейшей работы (биоматериалы/образцы/поля) — details.Products.
+            if (details.Products == null)
+                details.Products = new List<GemotestOrderDetail.GemotestProductDetail>();
+
+            if (details.Products.Count == 0)
+            {
+                FillDefaultOrderDetail(details, _Order.Items);
+            }
+            else
+            {
+                details.Dicts = Dicts;
+                details.AddBiomaterialsFromProducts();
+            }
+
             details.DeleteObsoleteDetails();
-            bool readOnly = true;
+
+            bool readOnly = _Order.State != OrderState.NotSended;
+
             ResultsCollection currentResults = new ResultsCollection();
             OrderModelForGUI model = new OrderModelForGUI();
 
@@ -188,7 +211,9 @@ namespace Laboratory.Gemotest
                                                               _OrderModel: ref model,
                                                               _ReadOnly: readOnly);
 
-            if (form.ShowDialog() == DialogResult.OK)
+            var res = form.ShowDialog();
+
+            if (res == DialogResult.OK)
             {
                 if (!readOnly)
                 {
@@ -197,12 +222,71 @@ namespace Laboratory.Gemotest
                 }
             }
 
-            return true;
+            // Поведение как в примере Bregislab: true только если ОК или поменялся State.
+            if (_Order.State != status || res == DialogResult.OK)
+                return true;
+
+            return false;
         }
 
         public bool ShowOrder(Order _Order, bool _bReadOnly, ref ResultsCollection _Results) { return false; }
 
-        public bool SendOrder(Order _Order) { return false; }
+        public bool SendOrder(Order _Order)
+        {
+            last_exception = null;
+            try
+            {
+                if (_Order == null)
+                    throw new InvalidOperationException("Заказ не задан.");
+
+                if (_Order.State != OrderState.Prepared)
+                {
+                    var msg = $"Попытка отправки заказа. Заказ должен быть в состоянии {OrderState.Prepared}, а сейчас { _Order.State }.";
+                    last_exception = new Exception(msg);
+                    SiMed.Clinic.Logger.LogEvent.SaveErrorToLog(msg, "Gemotest");
+                    return false;
+                }
+
+                if (!IsGemotestOptionsValid(Options))
+                    throw new InvalidOperationException("Опции Gemotest не заполнены (Url/Login/Password/Contractor_Code/Salt).");
+
+                var details = _Order.OrderDetail as GemotestOrderDetail;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                if (details.Products == null || details.Products.Count == 0)
+                    throw new InvalidOperationException("В заказе нет ни одной услуги (details.Products пуст).");
+
+                var sender = new GemotestOrderSender(
+                    Options.UrlAdress,
+                    Options.Contractor_Code,
+                    Options.Salt,
+                    Options.Login,
+                    Options.Password
+                );
+
+                string errorMessage;
+                if (!sender.CreateOrder(_Order, out errorMessage))
+                {
+                    if (!string.IsNullOrEmpty(errorMessage))
+                        last_exception = new Exception($"Ошибка отправки заказа в Гемотест: {errorMessage}");
+                    else
+                        last_exception = new Exception("Ошибка отправки заказа в Гемотест (без текста ошибки)");
+
+                    SiMed.Clinic.Logger.LogEvent.SaveErrorToLog(last_exception.Message, "Gemotest");
+                    return false;
+                }
+
+                _Order.State = OrderState.Commited;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                last_exception = ex;
+                SiMed.Clinic.Logger.LogEvent.SaveErrorToLog(ex.Message, "Gemotest");
+                return false;
+            }
+        }
 
         public void PrintOrderForms(Order _Order) {
             ResultsCollection resultsCollection = new ResultsCollection();
@@ -215,14 +299,11 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            if (string.IsNullOrWhiteSpace(_SystemOptions))
-                _SystemOptions = ReadTextSafe(OptionsFilePath);
 
             OptionsFormsGemotest optionsSystem = new OptionsFormsGemotest(_SystemOptions);
             if (optionsSystem.ShowDialog() == DialogResult.OK)
             {
                 _SystemOptions = optionsSystem.Options.Pack();
-                WriteTextSafe(LocalOptionsFilePath, _SystemOptions);
                 return true;
             }
             return false;
@@ -232,14 +313,10 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            if (string.IsNullOrWhiteSpace(_LocalOptions))
-                _LocalOptions = ReadTextSafe(LocalOptionsFilePath);
-
             LocalOptionsForm Local_options = new LocalOptionsForm(_LocalOptions);
             if (Local_options.ShowDialog() == DialogResult.OK)
             {
                 _LocalOptions = Local_options.Options.Pack();
-                WriteTextSafe(OptionsFilePath, _LocalOptions);
                 return true;
             }
             return false;
@@ -249,16 +326,9 @@ namespace Laboratory.Gemotest
         {
             Directory.CreateDirectory(BaseDir);
 
-            if (string.IsNullOrWhiteSpace(_LocalOptions))
-                _LocalOptions = ReadTextSafe(OptionsFilePath);
-
-            if (string.IsNullOrWhiteSpace(_SystemOptions))
-                _SystemOptions = ReadTextSafe(LocalOptionsFilePath);
-
-            if (!string.IsNullOrWhiteSpace(_LocalOptions))
+            if (!string.IsNullOrWhiteSpace(_SystemOptions))
             {
-                Options = (OptionsGemotest)new OptionsGemotest().Unpack(_LocalOptions);
-                WriteTextSafe(OptionsFilePath, _LocalOptions);
+                Options = (OptionsGemotest)new OptionsGemotest().Unpack(_SystemOptions);
             }
             else
             {
@@ -266,10 +336,9 @@ namespace Laboratory.Gemotest
 
             }
 
-            if (!string.IsNullOrWhiteSpace(_SystemOptions))
+            if (!string.IsNullOrWhiteSpace(_LocalOptions))
             {
-                LocalOptions = (LocalOptionsGemotest)new LocalOptionsGemotest().Unpack(_SystemOptions);
-                WriteTextSafe(LocalOptionsFilePath, _SystemOptions);
+                LocalOptions = (LocalOptionsGemotest)new LocalOptionsGemotest().Unpack(_LocalOptions);
             }
             else
             {
@@ -308,20 +377,13 @@ namespace Laboratory.Gemotest
                 }
 
 
-                if (!Gemotest.all_dictionaries_is_valid())
-                {
-                    bool ok = Gemotest.get_all_dictionary();
-                    if (!ok) return false;
-                }
 
-
-                bool unpackOk = Dicts.Unpack(Gemotest.filePath);
-                if (!unpackOk)
-                {
-                    Console.WriteLine("Ошибка распаковки");
+                if (!RefreshDictionariesAtInit())
                     return false;
 
-                }
+                // На всякий случай сбрасываем кэш продуктов (чтобы перечитать Directory.xml после обновления)
+                ProductsGemotest = null;
+                product = null;
                 laboratoryGUI = new LaboratoryGemotestGUI();
                 EnsureProductsLoaded();
                 AllProducts = GetProducts();
@@ -341,7 +403,142 @@ namespace Laboratory.Gemotest
         }
 
 
-        public void SetNumerator(INumerator _Numerator) { }
+                private static readonly string[] DictionaryFiles = new string[]
+        {
+            "Biomaterials.xml",
+            "Transport.xml",
+            "Localization.xml",
+            "Service_group.xml",
+            "Service_parameters.xml",
+            "Directory.xml",
+            "Tests.xml",
+            "Samples_services.xml",
+            "Samples.xml",
+            "Processing_rules.xml",
+            "Marketing_complex_composition.xml",
+            "Services_group_analogs.xml",
+            "Service_auto_insert.xml",
+            "Services_supplementals.xml"
+        };
+
+        private bool RefreshDictionariesAtInit()
+        {
+            // Требование:
+            // 1) при каждой инициализации пытаемся скачать свежие справочники
+            // 2) если не смогли — используем старые локальные
+            if (Gemotest == null)
+                return false;
+
+            string root = Gemotest.filePath;
+
+            // 0) сначала пытаемся прочитать старые (если есть)
+            bool oldLoaded = false;
+            try { oldLoaded = Dicts.Unpack(root); } catch { oldLoaded = false; }
+
+            // 1) бэкап существующих XML, чтобы можно было откатить частично скачанные/битые файлы
+            string backupDir = Path.Combine(root, "_backup");
+
+            try
+            {
+                BackupDictionaryFiles(root, backupDir);
+
+                // 2) форсим обновление: если внутри GemotestService стоит проверка "24 часа",
+                //    то искусственно "старим" файлы, чтобы метод не скипал загрузку.
+                ForceDictionaryFilesOutdated(root, 2);
+
+                // 3) пробуем скачать
+                bool downloaded = Gemotest.get_all_dictionary();
+
+                // 4) если скачали — пробуем распаковать новые; если распаковка упала — откат
+                if (downloaded)
+                {
+                    bool unpackOk = Dicts.Unpack(root);
+                    if (unpackOk)
+                    {
+                        DeleteDirectorySafe(backupDir);
+                        return true;
+                    }
+                }
+
+                // Скачивание не удалось или новые файлы битые → откатываемся
+                RestoreDictionaryFiles(root, backupDir);
+
+                bool restoredOk = Dicts.Unpack(root);
+                if (restoredOk)
+                    return true;
+
+                // Если даже восстановленные не читаются — тогда возвращаем то, что было в памяти
+                return oldLoaded;
+            }
+            catch (Exception ex)
+            {
+                // Любая ошибка обновления не должна "ронять" работу, если старые справочники уже были
+                last_exception = ex;
+                try
+                {
+                    RestoreDictionaryFiles(root, backupDir);
+                    if (Dicts.Unpack(root))
+                        return true;
+                }
+                catch { }
+
+                return oldLoaded;
+            }
+        }
+
+        private static void BackupDictionaryFiles(string root, string backupDir)
+        {
+            Directory.CreateDirectory(backupDir);
+
+            foreach (string name in DictionaryFiles)
+            {
+                string src = Path.Combine(root, name);
+                if (!File.Exists(src)) continue;
+
+                string dst = Path.Combine(backupDir, name);
+                File.Copy(src, dst, true);
+            }
+        }
+
+        private static void RestoreDictionaryFiles(string root, string backupDir)
+        {
+            if (!Directory.Exists(backupDir))
+                return;
+
+            foreach (string name in DictionaryFiles)
+            {
+                string src = Path.Combine(backupDir, name);
+                if (!File.Exists(src)) continue;
+
+                string dst = Path.Combine(root, name);
+                File.Copy(src, dst, true);
+            }
+        }
+
+        private static void ForceDictionaryFilesOutdated(string root, int daysBack)
+        {
+            DateTime ts = DateTime.Now.AddDays(-Math.Abs(daysBack));
+
+            foreach (string name in DictionaryFiles)
+            {
+                string f = Path.Combine(root, name);
+                if (!File.Exists(f)) continue;
+
+                try { File.SetLastWriteTime(f, ts); } catch { }
+            }
+        }
+
+        private static void DeleteDirectorySafe(string dir)
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+            catch { }
+        }
+
+public void SetNumerator(INumerator _Numerator) { }
 
         private static readonly string BaseDir =
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -349,24 +546,6 @@ namespace Laboratory.Gemotest
 
         private static readonly string OptionsFilePath = Path.Combine(BaseDir, "options.xml");
         private static readonly string LocalOptionsFilePath = Path.Combine(BaseDir, "local_options.xml");
-
-        private static void WriteTextSafe(string path, string text)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? ".");
-            File.WriteAllText(path, text ?? string.Empty, Encoding.UTF8);
-        }
-
-        private static string ReadTextSafe(string path)
-        {
-            try
-            {
-                return File.Exists(path) ? File.ReadAllText(path, Encoding.UTF8) : string.Empty;
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
 
         private static bool IsGemotestOptionsValid(OptionsGemotest o)
         {

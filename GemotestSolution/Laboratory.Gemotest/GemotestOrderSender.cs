@@ -41,24 +41,37 @@ namespace Laboratory.Gemotest.GemotestRequests
             public string TransportId;
         }
 
+        private sealed class SoapSupplementalItem
+        {
+            public string Id;
+            public string Name;
+            public string Value;
+        }
+
         public bool CreateOrder(Order order, out string errorMessage)
         {
             errorMessage = null;
 
             try
             {
-                if (order == null) throw new ArgumentNullException(nameof(order));
+                if (order == null)
+                    throw new ArgumentNullException(nameof(order));
 
                 var details = order.OrderDetail as GemotestOrderDetail;
-                if (details == null) throw new InvalidOperationException("OrderDetail должен быть GemotestOrderDetail.");
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail должен быть GemotestOrderDetail.");
 
-                _dictionaries = details.Dicts ?? throw new InvalidOperationException("Dictionaries не назначены: перед отправкой заказа нужно установить details.Dicts (из LaboratoryGemotest.Dicts).");
-                if (details.Products == null || details.Products.Count == 0) throw new InvalidOperationException("В заказе нет ни одной услуги.");
+                _dictionaries = details.Dicts;
+                if (_dictionaries == null)
+                    throw new InvalidOperationException("Dictionaries не назначены: перед отправкой заказа нужно установить details.Dicts.");
+
+                if (details.Products == null || details.Products.Count == 0)
+                    throw new InvalidOperationException("В заказе нет ни одной услуги.");
 
                 var patient = order.Patient ?? new Patient();
 
                 string extNum = string.IsNullOrWhiteSpace(order.Number)
-                    ? "SiMed_" + DateTime.Now.ToString("yyyyMMddHHmmss")
+                    ? "SiMed_" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)
                     : order.Number;
 
                 string orderNum = "";
@@ -73,39 +86,34 @@ namespace Laboratory.Gemotest.GemotestRequests
                     birthDate,
                     _salt);
 
-
                 DumpUserSelection(details);
 
-
                 var rows = BuildSampleServiceRows(details);
-
-                if (rows.Count == 0)
+                if (rows == null || rows.Count == 0)
                     throw new InvalidOperationException("Не удалось определить пробы для выбранных услуг (rows=0).");
 
                 DumpRows(rows);
 
-
                 var tubes = GemotestSamplePacker.Pack(rows);
-
                 if (tubes == null || tubes.Count == 0)
                     throw new InvalidOperationException("Упаковка не дала ни одной пробирки (tubes=0).");
 
                 DumpPacking(tubes);
 
-
-                long rangeStart, rangeEnd;
+                long rangeStart;
+                long rangeEnd;
                 GetSampleIdentifiersRange(tubes.Count, out rangeStart, out rangeEnd);
 
                 long available = (rangeEnd - rangeStart) + 1;
                 if (available < tubes.Count)
                     throw new InvalidOperationException("get_sample_identifiers вернул недостаточно идентификаторов.");
 
-
                 AssignIdentifiers(tubes, rangeStart);
 
-
                 var topServices = BuildTopLevelServices(details);
+                var supplementals = BuildServiceSupplementals(details);
 
+                DumpSupplementals(supplementals);
 
                 string xml = BuildCreateOrderEnvelopeVariantA(
                     extNum,
@@ -114,22 +122,23 @@ namespace Laboratory.Gemotest.GemotestRequests
                     createHash,
                     order.AuthorInformation ?? "",
                     patient,
+                    details,
                     topServices,
-                    tubes
-                );
+                    tubes,
+                    supplementals);
 
                 string responseXml = SendSoapRequest("create_order", xml);
 
                 var doc = new XmlDocument();
                 doc.LoadXml(responseXml);
 
-                var statusNodes = doc.GetElementsByTagName("status");
-                string status = statusNodes.Count > 0 ? statusNodes[0].InnerText : "";
-
+                string status = GetXmlNodeValue(doc, "status");
                 if (!string.Equals(status, "accepted", StringComparison.OrdinalIgnoreCase))
                 {
-                    var errorDescrNodes = doc.GetElementsByTagName("error_description");
-                    string errorText = errorDescrNodes.Count > 0 ? errorDescrNodes[0].InnerText : "Неизвестная ошибка create_order.";
+                    string errorText = GetErrorDescription(doc);
+                    if (string.IsNullOrWhiteSpace(errorText))
+                        errorText = "Неизвестная ошибка create_order.";
+
                     throw new Exception("Ошибка create_order: " + errorText);
                 }
 
@@ -141,7 +150,6 @@ namespace Laboratory.Gemotest.GemotestRequests
                 return false;
             }
         }
-
 
         private static int ToInt(object value, int defaultValue)
         {
@@ -193,8 +201,6 @@ namespace Laboratory.Gemotest.GemotestRequests
 
         private static int MapGender(object sexEnum)
         {
-
-
             string s = sexEnum == null ? "" : sexEnum.ToString();
             s = (s ?? "").ToLowerInvariant();
 
@@ -231,7 +237,8 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var prod = details.Products[i];
                 if (prod == null || string.IsNullOrEmpty(prod.ProductId)) continue;
 
-                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out var svc) || svc == null)
+                DictionaryService svc;
+                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out svc) || svc == null)
                     continue;
 
                 int? serviceType = svc.service_type;
@@ -253,7 +260,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         private Dictionary<int, string> BuildChosenBiomaterialByProductIndex(GemotestOrderDetail details)
         {
             var map = new Dictionary<int, string>();
-
 
             for (int b = 0; b < details.BioMaterials.Count; b++)
             {
@@ -299,20 +305,19 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var prod = details.Products[i];
                 if (prod == null || string.IsNullOrEmpty(prod.ProductId)) continue;
 
-                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out var svc) || svc == null)
+                DictionaryService svc;
+                if (!_dictionaries.Directory.TryGetValue(prod.ProductId, out svc) || svc == null)
                     continue;
 
                 int? serviceType = svc.service_type;
                 if (serviceType == 3 || serviceType == 4)
                     continue;
 
-
                 if (serviceType == 2)
                 {
                     AddRowsForMarketingComplex(prod.ProductId, rows);
                     continue;
                 }
-
 
                 string biomaterialId = chosenBio.ContainsKey(i) ? chosenBio[i] : "";
                 AddRowsForSimpleService(prod.ProductId, biomaterialId, rows, "", "");
@@ -321,13 +326,14 @@ namespace Laboratory.Gemotest.GemotestRequests
             return rows;
         }
 
-                private void AddRowsForMarketingComplex(string complexId, List<SampleServiceRow> rows)
+        private void AddRowsForMarketingComplex(string complexId, List<SampleServiceRow> rows)
         {
             if (string.IsNullOrEmpty(complexId))
                 return;
 
+            List<DictionaryMarketingComplex> comp;
             if (_dictionaries.MarketingComplexByComplexId == null ||
-                !_dictionaries.MarketingComplexByComplexId.TryGetValue(complexId, out var comp) ||
+                !_dictionaries.MarketingComplexByComplexId.TryGetValue(complexId, out comp) ||
                 comp == null || comp.Count == 0)
             {
                 return;
@@ -346,7 +352,7 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
-                private void AddRowsForSimpleService(
+        private void AddRowsForSimpleService(
             string serviceId,
             string biomaterialId,
             List<SampleServiceRow> rows,
@@ -356,13 +362,13 @@ namespace Laboratory.Gemotest.GemotestRequests
             if (string.IsNullOrEmpty(serviceId))
                 return;
 
+            List<DictionarySamplesServices> baseList;
             if (_dictionaries.SamplesServices == null ||
-                !_dictionaries.SamplesServices.TryGetValue(serviceId, out var baseList) ||
+                !_dictionaries.SamplesServices.TryGetValue(serviceId, out baseList) ||
                 baseList == null)
             {
                 baseList = new List<DictionarySamplesServices>();
             }
-
 
             var list = baseList;
 
@@ -371,7 +377,6 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             if (!string.IsNullOrEmpty(forcedLocalizationId))
                 list = list.Where(p => string.Equals(p.localization_id ?? "", forcedLocalizationId, StringComparison.OrdinalIgnoreCase)).ToList();
-
 
             if (list.Count == 0)
                 list = baseList;
@@ -386,7 +391,8 @@ namespace Laboratory.Gemotest.GemotestRequests
                 int primaryRaw = ToInt(p.primary_sample_id, 0);
                 int? primarySampleId = primaryRaw > 0 ? (int?)primaryRaw : null;
 
-                _dictionaries.Samples.TryGetValue(execSampleId.ToString(CultureInfo.InvariantCulture), out var execSample);
+                DictionarySamples execSample;
+                _dictionaries.Samples.TryGetValue(execSampleId.ToString(CultureInfo.InvariantCulture), out execSample);
 
                 string execName = execSample != null ? (execSample.name ?? "") : "";
                 string execTransport = execSample != null ? (execSample.transport_id ?? "") : "";
@@ -398,7 +404,8 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 if (primarySampleId.HasValue)
                 {
-                    _dictionaries.Samples.TryGetValue(primarySampleId.Value.ToString(CultureInfo.InvariantCulture), out var primSample);
+                    DictionarySamples primSample;
+                    _dictionaries.Samples.TryGetValue(primarySampleId.Value.ToString(CultureInfo.InvariantCulture), out primSample);
                     primName = primSample != null ? (primSample.name ?? "") : "";
                     primTransport = primSample != null ? (primSample.transport_id ?? "") : "";
                     primUtilize = primSample != null && primSample.utilize;
@@ -433,7 +440,6 @@ namespace Laboratory.Gemotest.GemotestRequests
         private void GetSampleIdentifiersRange(int count, out long rangeStart, out long rangeEnd)
         {
             if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
-
 
             string hash = BuildContractorHash(_contractor, _salt);
 
@@ -479,7 +485,6 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             sb.Append("</params>");
             sb.Append("</urn:get_sample_identifiers>");
-
             sb.Append("</soapenv:Body>");
             sb.Append("</soapenv:Envelope>");
 
@@ -501,14 +506,10 @@ namespace Laboratory.Gemotest.GemotestRequests
             var doc = new XmlDocument();
             doc.LoadXml(responseXml);
 
-            var statusNodes = doc.GetElementsByTagName("status");
-            string status = statusNodes.Count > 0 ? (statusNodes[0].InnerText ?? "") : "";
+            string status = GetXmlNodeValue(doc, "status");
+            accepted = string.Equals((status ?? "").Trim(), "accepted", StringComparison.OrdinalIgnoreCase);
 
-            accepted = string.Equals(status.Trim(), "accepted", StringComparison.OrdinalIgnoreCase);
-
-            var errNodes = doc.GetElementsByTagName("error_description");
-            if (errNodes.Count > 0)
-                errorDesc = errNodes[0].InnerText ?? "";
+            errorDesc = GetErrorDescription(doc);
 
             var rsNode = doc.GetElementsByTagName("range_start");
             var reNode = doc.GetElementsByTagName("range_end");
@@ -524,11 +525,14 @@ namespace Laboratory.Gemotest.GemotestRequests
             string hash,
             string comment,
             Patient patient,
+            GemotestOrderDetail details,
             IList<SoapTopServiceItem> services,
-            IList<TubePlan> tubes)
+            IList<TubePlan> tubes,
+            IList<SoapSupplementalItem> supplementals)
         {
             int svcCount = services != null ? services.Count : 0;
             int tubesCount = tubes != null ? tubes.Count : 0;
+            int suppCount = supplementals != null ? supplementals.Count : 0;
 
             string surname = patient != null ? (patient.Surname ?? "") : "";
             string firstname = patient != null ? (patient.Name ?? "") : "";
@@ -536,6 +540,29 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             DateTime birthDate = (patient != null && patient.Birthday != default(DateTime)) ? patient.Birthday : DateTime.Today;
             int gender = MapGender(patient != null ? (object)patient.Sex : null);
+
+            string email = FirstNotEmpty(
+                GetDetailValue(details, "email", "Email", "Patient_Email"),
+                patient != null ? patient.EMail : "");
+
+            string mobilePhone = GetDetailValue(details, "mobile_phone", "MobilePhone", "Patient_Phone", "phone", "Phone");
+            string homePhone = GetDetailValue(details, "home_phone", "HomePhone");
+            string flagSms = GetDetailValue(details, "flag_sms_notifications", "FlagSmsNotifications");
+
+            string address = GetDetailValue(details, "address", "Address");
+            string actualAddress = GetDetailValue(details, "actual_address", "ActualAddress");
+            string passport = GetDetailValue(details, "passport", "Passport");
+            string passportIssued = GetDetailValue(details, "passport_issued", "PassportIssued");
+            string passportIssuedBy = GetDetailValue(details, "passport_issued_by", "PassportIssuedBy");
+            string snils = FirstNotEmpty(
+                GetDetailValue(details, "snils", "SNILS", "Patient_SNILS"),
+                patient != null ? patient.SNILS : "");
+            string oms = GetDetailValue(details, "oms", "OMS");
+            string dms = GetDetailValue(details, "dms", "DMS");
+            string birthCertificate = GetDetailValue(details, "birth_certificate", "BirthCertificate");
+            string birthCertificateIssueDate = GetDetailValue(details, "birth_certificate_issue_date", "BirthCertificateIssueDate");
+            string birthCertificateIssueBy = GetDetailValue(details, "birth_certificate_issue_by", "BirthCertificateIssueBy");
+            string countryCode = GetDetailValue(details, "country_code", "CountryCode");
 
             var sb = new StringBuilder();
 
@@ -551,58 +578,71 @@ namespace Laboratory.Gemotest.GemotestRequests
             sb.Append("<urn:create_order soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
             sb.Append("<params xsi:type=\"urn:order\">");
 
-            sb.Append("<ext_num xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(extNum ?? ""))
-              .Append("</ext_num>");
-
-            sb.Append("<order_num xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(orderNum ?? ""))
-              .Append("</order_num>");
-
-            sb.Append("<contractor xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(contractor ?? ""))
-              .Append("</contractor>");
-
-            sb.Append("<hash xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(hash ?? ""))
-              .Append("</hash>");
-
-
-            sb.Append("<doctor xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(comment ?? ""))
-              .Append("</doctor>");
+            AppendSimpleElement(sb, "ext_num", extNum, "xsd:string");
+            AppendSimpleElement(sb, "order_num", orderNum, "xsd:string");
+            AppendSimpleElement(sb, "contractor", contractor, "xsd:string");
+            AppendSimpleElement(sb, "hash", hash, "xsd:string");
+            AppendSimpleElement(sb, "doctor", comment, "xsd:string");
 
             sb.Append("<order_status xsi:type=\"xsd:integer\">0</order_status>");
             sb.Append("<registered xsi:type=\"xsd:integer\">1</registered>");
 
-            sb.Append("<comment xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(comment ?? ""))
-              .Append("</comment>");
+            AppendSimpleElement(sb, "comment", comment, "xsd:string");
 
             sb.Append("<patient xsi:type=\"urn:patient\">");
-
-            sb.Append("<surname xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(surname))
-              .Append("</surname>");
-
-            sb.Append("<firstname xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(firstname))
-              .Append("</firstname>");
-
-            sb.Append("<middlename xsi:type=\"xsd:string\">")
-              .Append(SecurityElement.Escape(middlename))
-              .Append("</middlename>");
-
-            sb.Append("<birthdate xsi:type=\"xsd:date\">")
-              .Append(birthDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
-              .Append("</birthdate>");
-
+            AppendSimpleElement(sb, "surname", surname, "xsd:string");
+            AppendSimpleElement(sb, "firstname", firstname, "xsd:string");
+            AppendSimpleElement(sb, "middlename", middlename, "xsd:string");
+            AppendSimpleElement(sb, "birthdate", birthDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "xsd:date");
             sb.Append("<gender xsi:type=\"xsd:int\">")
               .Append(gender.ToString(CultureInfo.InvariantCulture))
               .Append("</gender>");
-
             sb.Append("</patient>");
 
+            bool hasAdditionalInformation =
+                !string.IsNullOrWhiteSpace(address) ||
+                !string.IsNullOrWhiteSpace(actualAddress) ||
+                !string.IsNullOrWhiteSpace(passport) ||
+                !string.IsNullOrWhiteSpace(passportIssued) ||
+                !string.IsNullOrWhiteSpace(passportIssuedBy) ||
+                !string.IsNullOrWhiteSpace(snils) ||
+                !string.IsNullOrWhiteSpace(oms) ||
+                !string.IsNullOrWhiteSpace(dms) ||
+                !string.IsNullOrWhiteSpace(birthCertificate) ||
+                !string.IsNullOrWhiteSpace(birthCertificateIssueDate) ||
+                !string.IsNullOrWhiteSpace(birthCertificateIssueBy) ||
+                !string.IsNullOrWhiteSpace(countryCode);
+
+            if (!hasAdditionalInformation)
+            {
+                sb.Append("<additional_information xsi:type=\"urn:additional_information\"/>");
+            }
+            else
+            {
+                sb.Append("<additional_information xsi:type=\"urn:additional_information\">");
+                AppendSimpleElement(sb, "address", address, "xsd:string");
+                AppendSimpleElement(sb, "actual_address", actualAddress, "xsd:string");
+                AppendSimpleElement(sb, "passport", passport, "xsd:string");
+                AppendSimpleElement(sb, "passport_issued", passportIssued, "xsd:string");
+                AppendSimpleElement(sb, "passport_issued_by", passportIssuedBy, "xsd:string");
+                AppendSimpleElement(sb, "snils", snils, "xsd:string");
+                AppendSimpleElement(sb, "oms", oms, "xsd:string");
+                AppendSimpleElement(sb, "dms", dms, "xsd:string");
+                AppendSimpleElement(sb, "birth_certificate", birthCertificate, "xsd:string");
+                AppendSimpleElement(sb, "birth_certificate_issue_date", birthCertificateIssueDate, "xsd:string");
+                AppendSimpleElement(sb, "birth_certificate_issue_by", birthCertificateIssueBy, "xsd:string");
+                AppendSimpleElement(sb, "country_code", countryCode, "xsd:string");
+                sb.Append("</additional_information>");
+            }
+
+            sb.Append("<informing xsi:type=\"urn:informing\">");
+            AppendSimpleElement(sb, "email", email, "xsd:string");
+            AppendSimpleElement(sb, "mobile_phone", mobilePhone, "xsd:string");
+            AppendSimpleElement(sb, "home_phone", homePhone, "xsd:string");
+            sb.Append("<flag_sms_notifications xsi:type=\"xsd:boolean\">")
+              .Append(ToSoapBoolean(flagSms))
+              .Append("</flag_sms_notifications>");
+            sb.Append("</informing>");
 
             sb.Append("<services xsi:type=\"urn:servicesArray\" soapenc:arrayType=\"urn:services[")
               .Append(svcCount.ToString(CultureInfo.InvariantCulture))
@@ -616,9 +656,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                     if (s == null || string.IsNullOrEmpty(s.Id)) continue;
 
                     sb.Append("<item>");
-                    sb.Append("<id xsi:type=\"xsd:string\">")
-                      .Append(SecurityElement.Escape(s.Id))
-                      .Append("</id>");
+                    AppendSimpleElement(sb, "id", s.Id, "xsd:string");
                     sb.Append("<biomaterial_id xsi:nil=\"true\"/>");
                     sb.Append("<localization_id xsi:nil=\"true\"/>");
                     sb.Append("<transport_id xsi:nil=\"true\"/>");
@@ -628,6 +666,26 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             sb.Append("</services>");
 
+            sb.Append("<services_supplementals xsi:type=\"urn:services_supplementalsArray\" soapenc:arrayType=\"urn:services_supplementals[")
+              .Append(suppCount.ToString(CultureInfo.InvariantCulture))
+              .Append("]\">");
+
+            if (supplementals != null)
+            {
+                for (int i = 0; i < supplementals.Count; i++)
+                {
+                    var s = supplementals[i];
+                    if (s == null) continue;
+
+                    sb.Append("<item>");
+                    AppendSimpleElement(sb, "id", s.Id, "xsd:string");
+                    AppendSimpleElement(sb, "name", s.Name, "xsd:string");
+                    AppendSimpleElement(sb, "value", s.Value, "xsd:string");
+                    sb.Append("</item>");
+                }
+            }
+
+            sb.Append("</services_supplementals>");
 
             sb.Append("<order_samples xsi:type=\"urn:order_sampleArray\" soapenc:arrayType=\"urn:order_sample[")
               .Append(tubesCount.ToString(CultureInfo.InvariantCulture))
@@ -646,37 +704,17 @@ namespace Laboratory.Gemotest.GemotestRequests
                       .Append(t.SampleId.ToString(CultureInfo.InvariantCulture))
                       .Append("</sample_id>");
 
-                    sb.Append("<sample_identifier xsi:type=\"xsd:string\">")
-                      .Append(SecurityElement.Escape(t.SampleIdentifier ?? ""))
-                      .Append("</sample_identifier>");
+                    AppendSimpleElement(sb, "sample_identifier", t.SampleIdentifier, "xsd:string");
 
                     if (string.IsNullOrEmpty(t.PrimarySampleIdentifier))
-                    {
                         sb.Append("<primary_sample_identifier/>");
-                    }
                     else
-                    {
-                        sb.Append("<primary_sample_identifier xsi:type=\"xsd:string\">")
-                          .Append(SecurityElement.Escape(t.PrimarySampleIdentifier))
-                          .Append("</primary_sample_identifier>");
-                    }
+                        AppendSimpleElement(sb, "primary_sample_identifier", t.PrimarySampleIdentifier, "xsd:string");
 
-
-                    sb.Append("<microbiology_biomaterial_id>")
-                      .Append(SecurityElement.Escape(t.MicroBioBiomaterialId ?? ""))
-                      .Append("</microbiology_biomaterial_id>");
-
-                    sb.Append("<localization_id>")
-                      .Append(SecurityElement.Escape(t.LocalizationId ?? ""))
-                      .Append("</localization_id>");
-
-                    sb.Append("<biomaterial_id>")
-                      .Append(SecurityElement.Escape(t.BiomaterialId ?? ""))
-                      .Append("</biomaterial_id>");
-
-                    sb.Append("<transport_id>")
-                      .Append(SecurityElement.Escape(t.TransportId ?? ""))
-                      .Append("</transport_id>");
+                    AppendSimpleElement(sb, "microbiology_biomaterial_id", t.MicroBioBiomaterialId, null);
+                    AppendSimpleElement(sb, "localization_id", t.LocalizationId, null);
+                    AppendSimpleElement(sb, "biomaterial_id", t.BiomaterialId, null);
+                    AppendSimpleElement(sb, "transport_id", t.TransportId, null);
 
                     int osCount = t.Services != null ? t.Services.Count : 0;
                     sb.Append("<services xsi:type=\"urn:order_sample_serviceArray\" soapenc:arrayType=\"urn:order_sample_service[")
@@ -691,12 +729,8 @@ namespace Laboratory.Gemotest.GemotestRequests
                             if (ss == null) continue;
 
                             sb.Append("<item>");
-                            sb.Append("<service_id xsi:type=\"xsd:string\">")
-                              .Append(SecurityElement.Escape(ss.ServiceId ?? ""))
-                              .Append("</service_id>");
-                            sb.Append("<complex_id xsi:type=\"xsd:string\">")
-                              .Append(SecurityElement.Escape(ss.ComplexId ?? ""))
-                              .Append("</complex_id>");
+                            AppendSimpleElement(sb, "service_id", ss.ServiceId, "xsd:string");
+                            AppendSimpleElement(sb, "complex_id", ss.ComplexId, "xsd:string");
                             sb.Append("<utilization_flag xsi:type=\"xsd:int\">")
                               .Append(ss.UtilizationFlag.ToString(CultureInfo.InvariantCulture))
                               .Append("</utilization_flag>");
@@ -713,7 +747,6 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
 
             sb.Append("</order_samples>");
-
             sb.Append("</params>");
             sb.Append("</urn:create_order>");
             sb.Append("</soapenv:Body>");
@@ -747,7 +780,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 var sb = new StringBuilder(hash.Length * 2);
                 for (int i = 0; i < hash.Length; i++)
-                    sb.Append(hash[i].ToString("x2"));
+                    sb.Append(hash[i].ToString("x2", CultureInfo.InvariantCulture));
 
                 return sb.ToString();
             }
@@ -764,7 +797,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 var sb = new StringBuilder(hash.Length * 2);
                 for (int i = 0; i < hash.Length; i++)
-                    sb.Append(hash[i].ToString("x2"));
+                    sb.Append(hash[i].ToString("x2", CultureInfo.InvariantCulture));
 
                 return sb.ToString();
             }
@@ -782,6 +815,8 @@ namespace Laboratory.Gemotest.GemotestRequests
             request.Method = "POST";
             request.ContentType = "text/xml; charset=utf-8";
             request.Headers["SOAPAction"] = soapAction;
+            request.Timeout = 120000;
+            request.ReadWriteTimeout = 120000;
 
             string credentials = _login + ":" + _password;
             string authHeader = Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
@@ -829,6 +864,232 @@ namespace Laboratory.Gemotest.GemotestRequests
             }
         }
 
+        private List<SoapSupplementalItem> BuildServiceSupplementals(GemotestOrderDetail details)
+        {
+            var result = new List<SoapSupplementalItem>();
+            if (details == null || details.Details == null)
+                return result;
+
+            for (int i = 0; i < details.Details.Count; i++)
+            {
+                var d = details.Details[i];
+                if (d == null)
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(d.Code))
+                    continue;
+
+                if (IsStdInfoField(d.Code))
+                    continue;
+
+                string sendValue = NormalizeSupplementalValue(d);
+                if (string.IsNullOrWhiteSpace(sendValue))
+                    continue;
+
+                var existing = result.FirstOrDefault(x => string.Equals(x.Id, d.Code, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    if (string.IsNullOrWhiteSpace(existing.Value) && !string.IsNullOrWhiteSpace(sendValue))
+                        existing.Value = sendValue;
+                    continue;
+                }
+
+                result.Add(new SoapSupplementalItem
+                {
+                    Id = d.Code ?? "",
+                    Name = string.IsNullOrWhiteSpace(d.Name) ? (d.Code ?? "") : d.Name,
+                    Value = sendValue
+                });
+            }
+
+            return result;
+        }
+
+        private static bool IsStdInfoField(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return false;
+
+            code = code.Trim().ToLowerInvariant();
+
+            switch (code)
+            {
+                case "email":
+                case "patient_email":
+                case "mobile_phone":
+                case "patient_phone":
+                case "phone":
+                case "home_phone":
+                case "flag_sms_notifications":
+                case "address":
+                case "actual_address":
+                case "passport":
+                case "passport_issued":
+                case "passport_issued_by":
+                case "snils":
+                case "patient_snils":
+                case "oms":
+                case "dms":
+                case "birth_certificate":
+                case "birth_certificate_issue_date":
+                case "birth_certificate_issue_by":
+                case "country_code":
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        private string NormalizeSupplementalValue(GemotestDetail detail)
+        {
+            if (detail == null)
+                return "";
+
+            string value = (detail.Value ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(value))
+                value = (detail.DisplayValue ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(value))
+                return "";
+
+            if (string.Equals(detail.Code ?? "", "Contingent", StringComparison.OrdinalIgnoreCase))
+            {
+                string contingentCode = TryExtractContingentCode(value);
+                if (!string.IsNullOrWhiteSpace(contingentCode))
+                    return contingentCode;
+            }
+
+            return value;
+        }
+
+        private static string TryExtractContingentCode(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "";
+
+            value = value.Trim();
+
+            int dashIndex = value.IndexOf('-');
+            if (dashIndex > 0)
+            {
+                string left = value.Substring(0, dashIndex).Trim();
+                if (left.All(char.IsDigit))
+                    return left;
+            }
+
+            int spaceIndex = value.IndexOf(' ');
+            if (spaceIndex > 0)
+            {
+                string left = value.Substring(0, spaceIndex).Trim();
+                if (left.All(char.IsDigit))
+                    return left;
+            }
+
+            if (value.All(char.IsDigit))
+                return value;
+
+            return value;
+        }
+
+        private string GetDetailValue(GemotestOrderDetail details, params string[] codes)
+        {
+            if (details == null || details.Details == null || codes == null)
+                return "";
+
+            for (int i = 0; i < codes.Length; i++)
+            {
+                string code = codes[i];
+                if (string.IsNullOrWhiteSpace(code))
+                    continue;
+
+                var d = details.Details.FirstOrDefault(x =>
+                    x != null &&
+                    !string.IsNullOrWhiteSpace(x.Code) &&
+                    string.Equals(x.Code.Trim(), code.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (d == null)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(d.Value))
+                    return d.Value;
+
+                if (!string.IsNullOrWhiteSpace(d.DisplayValue))
+                    return d.DisplayValue;
+            }
+
+            return "";
+        }
+
+        private static string FirstNotEmpty(params string[] values)
+        {
+            if (values == null)
+                return "";
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(values[i]))
+                    return values[i];
+            }
+
+            return "";
+        }
+
+        private static string ToSoapBoolean(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "0";
+
+            value = value.Trim();
+
+            if (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, "y", StringComparison.OrdinalIgnoreCase))
+                return "1";
+
+            return "0";
+        }
+
+        private static void AppendSimpleElement(StringBuilder sb, string name, string value, string xsiType)
+        {
+            if (sb == null || string.IsNullOrWhiteSpace(name))
+                return;
+
+            sb.Append("<").Append(name);
+            if (!string.IsNullOrWhiteSpace(xsiType))
+                sb.Append(" xsi:type=\"").Append(xsiType).Append("\"");
+            sb.Append(">");
+            sb.Append(SecurityElement.Escape(value ?? ""));
+            sb.Append("</").Append(name).Append(">");
+        }
+
+        private static string GetXmlNodeValue(XmlDocument doc, string tagName)
+        {
+            if (doc == null || string.IsNullOrWhiteSpace(tagName))
+                return "";
+
+            var nodes = doc.GetElementsByTagName(tagName);
+            return nodes.Count > 0 ? (nodes[0].InnerText ?? "") : "";
+        }
+
+        private static string GetErrorDescription(XmlDocument doc)
+        {
+            if (doc == null)
+                return "";
+
+            var errNodes = doc.GetElementsByTagName("error_description");
+            if (errNodes.Count == 0)
+                return "";
+
+            XmlNode n = errNodes[0];
+            if (n == null)
+                return "";
+
+            var text = n.InnerText ?? "";
+            return text.Trim();
+        }
+
         private void DumpUserSelection(GemotestOrderDetail details)
         {
             Console.WriteLine();
@@ -837,13 +1098,13 @@ namespace Laboratory.Gemotest.GemotestRequests
             {
                 var p = details.Products[i];
 
-                _dictionaries.Directory.TryGetValue(p.ProductId ?? "", out var svc);
+                DictionaryService svc;
+                _dictionaries.Directory.TryGetValue(p.ProductId ?? "", out svc);
                 if (svc != null)
-                    Console.WriteLine($"    -> type={svc.type}, service_type={(svc.service_type.HasValue ? svc.service_type.Value.ToString() : "null")}");
+                    Console.WriteLine("    -> type=" + svc.type + ", service_type=" + (svc.service_type.HasValue ? svc.service_type.Value.ToString(CultureInfo.InvariantCulture) : "null"));
 
-                Console.WriteLine("[" + i + "] " + (p.ProductId ?? "") + " | " + (p.ProductName ?? ""));
+                Console.WriteLine("[" + i.ToString(CultureInfo.InvariantCulture) + "] " + (p.ProductId ?? "") + " | " + (p.ProductName ?? ""));
             }
-
 
             Console.WriteLine();
             Console.WriteLine("=== Выбор пользователя (биоматериал по услугам) ===");
@@ -859,7 +1120,7 @@ namespace Laboratory.Gemotest.GemotestRequests
                     bioName = b != null ? (b.Name ?? "") : "";
                 }
 
-                Console.WriteLine("[" + i + "] bio=" + bio + " " + bioName);
+                Console.WriteLine("[" + i.ToString(CultureInfo.InvariantCulture) + "] bio=" + bio + " " + bioName);
             }
         }
 
@@ -877,13 +1138,13 @@ namespace Laboratory.Gemotest.GemotestRequests
                     : ("BM:" + r.BiomaterialId);
 
                 Console.WriteLine(
-                    "[" + i + "] svc=" + r.ServiceId +
+                    "[" + i.ToString(CultureInfo.InvariantCulture) + "] svc=" + r.ServiceId +
                     (string.IsNullOrEmpty(r.ComplexId) ? "" : (" complex=" + r.ComplexId)) +
-                    " sample=" + r.ExecutionSampleId +
-                    (r.PrimarySampleId.HasValue ? (" primary=" + r.PrimarySampleId.Value) : "") +
+                    " sample=" + r.ExecutionSampleId.ToString(CultureInfo.InvariantCulture) +
+                    (r.PrimarySampleId.HasValue ? (" primary=" + r.PrimarySampleId.Value.ToString(CultureInfo.InvariantCulture)) : "") +
                     " loc=" + (r.LocalizationId ?? "") +
                     " " + bioKey +
-                    " sc=" + r.ServiceCount +
+                    " sc=" + r.ServiceCount.ToString(CultureInfo.InvariantCulture) +
                     " execTr=" + (r.ExecutionTransportId ?? "")
                 );
             }
@@ -897,9 +1158,9 @@ namespace Laboratory.Gemotest.GemotestRequests
             for (int i = 0; i < tubes.Count; i++)
             {
                 var t = tubes[i];
-                string parent = t.Parent != null ? (" parentSample=" + t.Parent.SampleId) : "";
+                string parent = t.Parent != null ? (" parentSample=" + t.Parent.SampleId.ToString(CultureInfo.InvariantCulture)) : "";
                 Console.WriteLine(
-                    "[" + i + "] sample=" + t.SampleId +
+                    "[" + i.ToString(CultureInfo.InvariantCulture) + "] sample=" + t.SampleId.ToString(CultureInfo.InvariantCulture) +
                     parent +
                     " tr=" + (t.TransportId ?? "") +
                     " loc=" + (t.LocalizationId ?? "") +
@@ -915,14 +1176,37 @@ namespace Laboratory.Gemotest.GemotestRequests
                         Console.WriteLine("    - " + (s.ServiceId ?? "") +
                                           (string.IsNullOrEmpty(s.ComplexId) ? "" : (" (complex " + s.ComplexId + ")")) +
                                           " share=" + s.SharePercent.ToString("0.##", CultureInfo.InvariantCulture) +
-                                          "% util=" + s.UtilizationFlag +
-                                          " refuse=" + s.RefuseFlag);
+                                          "% util=" + s.UtilizationFlag.ToString(CultureInfo.InvariantCulture) +
+                                          " refuse=" + s.RefuseFlag.ToString(CultureInfo.InvariantCulture));
                     }
                 }
             }
 
             Console.WriteLine();
-            Console.WriteLine("Всего контейнеров для отправки: " + tubes.Count);
+            Console.WriteLine("Всего контейнеров для отправки: " + tubes.Count.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private void DumpSupplementals(List<SoapSupplementalItem> supplementals)
+        {
+            Console.WriteLine();
+            Console.WriteLine("=== Дополнительные поля (services_supplementals) ===");
+
+            if (supplementals == null || supplementals.Count == 0)
+            {
+                Console.WriteLine("(пусто)");
+                return;
+            }
+
+            for (int i = 0; i < supplementals.Count; i++)
+            {
+                var s = supplementals[i];
+                if (s == null) continue;
+
+                Console.WriteLine("[" + i.ToString(CultureInfo.InvariantCulture) + "] " +
+                                  (s.Id ?? "") +
+                                  " | " + (s.Name ?? "") +
+                                  " | " + (s.Value ?? ""));
+            }
         }
     }
 }

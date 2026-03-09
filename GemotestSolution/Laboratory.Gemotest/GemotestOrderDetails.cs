@@ -75,9 +75,8 @@ namespace Laboratory.Gemotest.SourseClass
         public List<GemotestBioMaterial> BioMaterials { get; set; }
         public List<Product> DefectProductList { get; set; }
         public string PriceList { get; set; }
-
-        [XmlIgnore]
-        public Order Order { get; set; }
+        public string PriceListCode { get; set; }  // код контрагента
+        public string PriceListName { get; set; }  // название/описание
 
         [XmlIgnore]
         public Dictionaries Dicts { get; set; }
@@ -107,20 +106,14 @@ namespace Laboratory.Gemotest.SourseClass
 
 
             public string ProductName;
-
-            public int DurationDays;
-            public string DurationInfo;
-
             public Product AsProduct()
             {
                 Product p = new Product(ProductName, ProductId, ProductCode);
-                p.Duration = DurationDays;
-                p.DurationInfo = DurationInfo;
                 return p;
             }
         }
 
-        private List<DictionaryBiomaterials> ResolveBiomaterialsForService(DictionaryService service)
+                private List<DictionaryBiomaterials> ResolveBiomaterialsForService(DictionaryService service)
         {
             var result = new List<DictionaryBiomaterials>();
             if (service == null)
@@ -301,7 +294,7 @@ namespace Laboratory.Gemotest.SourseClass
                 .Where(b => b.Chosen.Count > 0 || b.Another.Count > 0 || b.Mandatory.Count > 0)
                 .ToList();
 
-            Console.WriteLine($"[AddBiomaterialsFromProducts] BioMaterials.Count = {BioMaterials.Count}");
+             Console.WriteLine($"[AddBiomaterialsFromProducts] BioMaterials.Count = {BioMaterials.Count}");
         }
 
         public void DeleteObsoleteDetails()

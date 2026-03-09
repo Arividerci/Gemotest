@@ -90,11 +90,6 @@ namespace Laboratory.Gemotest
 
             foreach (var p in product)
             {
-                // Печать ДО фильтров, чтобы понять, кого ты отсекаешь
-                Console.WriteLine(
-                    $"RAW: id={p.ID} code={p.Code} name={p.Name} blocked={p.IsBlocked} serviceType={p.ServiceType} duration={p.Duration}"
-                );
-
                 if (p.IsBlocked)
                     continue;
 
@@ -103,8 +98,6 @@ namespace Laboratory.Gemotest
 
                 if (string.IsNullOrEmpty(p.ID) || string.IsNullOrEmpty(p.Code) || string.IsNullOrEmpty(p.Name))
                     continue;
-
-                Console.WriteLine($"ADD: {p.Code} | {p.Name} | Duration={p.Duration}");
 
                 pC.Add(new Product
                 {
@@ -150,9 +143,63 @@ namespace Laboratory.Gemotest
             }
 
             details.Dicts = Dicts;
+            ApplyPriceListToDetails(details);
             details.AddBiomaterialsFromProducts();
         }
 
+        private void ApplyPriceListToDetails(GemotestOrderDetail details)
+        {
+            if (details == null)
+                return;
+
+            if (!string.IsNullOrWhiteSpace(details.PriceListCode))
+            {
+                if (Options != null && Options.PriceLists != null && Options.PriceLists.Count > 0)
+                {
+                    var existing = Options.PriceLists.FirstOrDefault(x =>
+                        x != null &&
+                        !string.IsNullOrWhiteSpace(x.ContractorCode) &&
+                        string.Equals(x.ContractorCode.Trim(), details.PriceListCode.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                    if (existing != null)
+                    {
+                        details.PriceList = existing.Name ?? details.PriceList ?? "";
+                        details.PriceListName = existing.Name ?? details.PriceListName ?? "";
+                    }
+                    else
+                    {
+                        if (string.IsNullOrWhiteSpace(details.PriceListName))
+                            details.PriceListName = details.PriceList ?? "";
+                    }
+                }
+
+                return;
+            }
+
+            if (Options != null && Options.PriceLists != null && Options.PriceLists.Count == 1)
+            {
+                var pl = Options.PriceLists[0];
+                details.PriceList = pl.Name ?? "";
+                details.PriceListName = pl.Name ?? "";
+                details.PriceListCode = pl.ContractorCode ?? "";
+                return;
+            }
+
+            if (Options != null && Options.PriceLists != null && Options.PriceLists.Count > 1)
+            {
+                details.PriceList = details.PriceList ?? "";
+                details.PriceListName = details.PriceListName ?? "";
+                details.PriceListCode = details.PriceListCode ?? "";
+                return;
+            }
+
+            var code = Options != null ? (Options.Contractor_Code ?? "") : "";
+            var name = Options != null ? (Options.Contractor ?? "") : "";
+
+            details.PriceList = name;
+            details.PriceListName = name;
+            details.PriceListCode = code;
+        }
 
         public bool CreateOrder(Order _Order)
         {
@@ -187,6 +234,7 @@ namespace Laboratory.Gemotest
             else
             {
                 details.Dicts = Dicts;
+                ApplyPriceListToDetails(details);
                 details.AddBiomaterialsFromProducts();
             }
 
@@ -257,9 +305,11 @@ namespace Laboratory.Gemotest
                 if (details.Products == null || details.Products.Count == 0)
                     throw new InvalidOperationException("В заказе нет ни одной услуги (details.Products пуст).");
 
+                var contractorCode = !string.IsNullOrEmpty(details.PriceListCode) ? details.PriceListCode : Options.Contractor_Code;
+
                 var sender = new GemotestOrderSender(
                     Options.UrlAdress,
-                    Options.Contractor_Code,
+                    contractorCode,
                     Options.Salt,
                     Options.Login,
                     Options.Password
@@ -297,9 +347,6 @@ namespace Laboratory.Gemotest
 
         public bool ShowSystemOptions(ref string _SystemOptions)
         {
-            Directory.CreateDirectory(BaseDir);
-
-
             OptionsFormsGemotest optionsSystem = new OptionsFormsGemotest(_SystemOptions);
             if (optionsSystem.ShowDialog() == DialogResult.OK)
             {
@@ -311,8 +358,6 @@ namespace Laboratory.Gemotest
 
         public bool ShowLocalOptions(ref string _LocalOptions)
         {
-            Directory.CreateDirectory(BaseDir);
-
             LocalOptionsForm Local_options = new LocalOptionsForm(_LocalOptions);
             if (Local_options.ShowDialog() == DialogResult.OK)
             {
@@ -324,8 +369,6 @@ namespace Laboratory.Gemotest
 
         public void SetOptions(string _SystemOptions, string _LocalOptions)
         {
-            Directory.CreateDirectory(BaseDir);
-
             if (!string.IsNullOrWhiteSpace(_SystemOptions))
             {
                 Options = (OptionsGemotest)new OptionsGemotest().Unpack(_SystemOptions);
@@ -348,9 +391,13 @@ namespace Laboratory.Gemotest
 
             if (IsGemotestOptionsValid(Options))
             {
+                string initContractorName;
+                string initContractorCode;
+                ResolveContractorForServiceInit(Options, out initContractorName, out initContractorCode);
+
                 Gemotest = new GemotestService(
                     Options.UrlAdress, Options.Login, Options.Password,
-                    Options.Contractor, Options.Contractor_Code, Options.Salt);
+                    initContractorName, initContractorCode, Options.Salt);
             }
             else
             {
@@ -369,28 +416,27 @@ namespace Laboratory.Gemotest
                 if (!IsGemotestOptionsValid(Options))
                     return false;
 
-                if (Gemotest == null)
+                bool inited = false;
+                foreach (var pl in GetInitCandidates())
                 {
-                    Gemotest = new GemotestService(
-                        Options.UrlAdress, Options.Login, Options.Password,
-                        Options.Contractor, Options.Contractor_Code, Options.Salt);
+                    if (TryInitWithPriceList(pl))
+                    {
+                        inited = true;
+                        break;
+                    }
                 }
 
-
-
-                if (!RefreshDictionariesAtInit())
+                if (!inited)
                     return false;
 
-                // На всякий случай сбрасываем кэш продуктов (чтобы перечитать Directory.xml после обновления)
                 ProductsGemotest = null;
                 product = null;
                 laboratoryGUI = new LaboratoryGemotestGUI();
+
                 EnsureProductsLoaded();
                 AllProducts = GetProducts();
 
                 laboratoryGUI.SetAssignedModules(this, AllProducts, LocalOptions, Options);
-                Console.WriteLine("+");
-
 
                 SiMed.Clinic.Logger.LogEvent.RemoveOldFilesFromLog("Gemotest", 30);
                 return true;
@@ -402,8 +448,7 @@ namespace Laboratory.Gemotest
             }
         }
 
-
-                private static readonly string[] DictionaryFiles = new string[]
+        private static readonly string[] DictionaryFiles = new string[]
         {
             "Biomaterials.xml",
             "Transport.xml",
@@ -423,33 +468,23 @@ namespace Laboratory.Gemotest
 
         private bool RefreshDictionariesAtInit()
         {
-            // Требование:
-            // 1) при каждой инициализации пытаемся скачать свежие справочники
-            // 2) если не смогли — используем старые локальные
             if (Gemotest == null)
                 return false;
 
             string root = Gemotest.filePath;
 
-            // 0) сначала пытаемся прочитать старые (если есть)
             bool oldLoaded = false;
             try { oldLoaded = Dicts.Unpack(root); } catch { oldLoaded = false; }
 
-            // 1) бэкап существующих XML, чтобы можно было откатить частично скачанные/битые файлы
             string backupDir = Path.Combine(root, "_backup");
 
             try
             {
                 BackupDictionaryFiles(root, backupDir);
-
-                // 2) форсим обновление: если внутри GemotestService стоит проверка "24 часа",
-                //    то искусственно "старим" файлы, чтобы метод не скипал загрузку.
                 ForceDictionaryFilesOutdated(root, 2);
 
-                // 3) пробуем скачать
                 bool downloaded = Gemotest.get_all_dictionary();
 
-                // 4) если скачали — пробуем распаковать новые; если распаковка упала — откат
                 if (downloaded)
                 {
                     bool unpackOk = Dicts.Unpack(root);
@@ -460,19 +495,16 @@ namespace Laboratory.Gemotest
                     }
                 }
 
-                // Скачивание не удалось или новые файлы битые → откатываемся
                 RestoreDictionaryFiles(root, backupDir);
 
                 bool restoredOk = Dicts.Unpack(root);
                 if (restoredOk)
                     return true;
 
-                // Если даже восстановленные не читаются — тогда возвращаем то, что было в памяти
                 return oldLoaded;
             }
             catch (Exception ex)
             {
-                // Любая ошибка обновления не должна "ронять" работу, если старые справочники уже были
                 last_exception = ex;
                 try
                 {
@@ -538,14 +570,7 @@ namespace Laboratory.Gemotest
             catch { }
         }
 
-public void SetNumerator(INumerator _Numerator) { }
-
-        private static readonly string BaseDir =
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "Симплекс", "СиМед - Клиника", "GemotestDictionaries", "Options");
-
-        private static readonly string OptionsFilePath = Path.Combine(BaseDir, "options.xml");
-        private static readonly string LocalOptionsFilePath = Path.Combine(BaseDir, "local_options.xml");
+        public void SetNumerator(INumerator _Numerator) { }
 
         private static bool IsGemotestOptionsValid(OptionsGemotest o)
         {
@@ -553,11 +578,12 @@ public void SetNumerator(INumerator _Numerator) { }
                    !string.IsNullOrWhiteSpace(o.UrlAdress) &&
                    !string.IsNullOrWhiteSpace(o.Login) &&
                    !string.IsNullOrWhiteSpace(o.Password) &&
-                   !string.IsNullOrWhiteSpace(o.Contractor) &&
-                   !string.IsNullOrWhiteSpace(o.Contractor_Code) &&
-                   !string.IsNullOrWhiteSpace(o.Salt);
+                   !string.IsNullOrWhiteSpace(o.Salt) &&
+                   (
+                       !string.IsNullOrWhiteSpace(o.Contractor_Code) ||
+                       (o.PriceLists != null && o.PriceLists.Any(x => x != null && !string.IsNullOrWhiteSpace(x.ContractorCode)))
+                   );
         }
-
 
         public bool CheckResult(Order _Order, ref ResultsCollection _Results) {
             _Results = null;
@@ -578,6 +604,96 @@ public void SetNumerator(INumerator _Numerator) { }
 
         public bool GetNumbersPoolIfNeed(out bool _NumbersPoolChanged, out string _SystemOptionsNew) { _NumbersPoolChanged = false; _SystemOptionsNew = ""; return true; }
 
+        private static bool HasConfiguredPriceLists(OptionsGemotest o)
+        {
+            return o != null &&
+                   o.PriceLists != null &&
+                   o.PriceLists.Any(x => x != null && !string.IsNullOrWhiteSpace(x.ContractorCode));
+        }
 
+        private IEnumerable<GemotestPriceList> GetInitCandidates()
+        {
+            var result = new List<GemotestPriceList>();
+
+            // 1. Сначала текущий выбранный в настройках
+            if (Options != null && !string.IsNullOrWhiteSpace(Options.Contractor_Code))
+            {
+                result.Add(new GemotestPriceList
+                {
+                    ContractorCode = Options.Contractor_Code ?? "",
+                    Name = Options.Contractor ?? ""
+                });
+            }
+
+            // 2. Потом все остальные прайсы
+            if (Options != null && Options.PriceLists != null)
+            {
+                foreach (var pl in Options.PriceLists)
+                {
+                    if (pl == null || string.IsNullOrWhiteSpace(pl.ContractorCode))
+                        continue;
+
+                    if (result.Any(x => string.Equals(x.ContractorCode, pl.ContractorCode, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    result.Add(new GemotestPriceList
+                    {
+                        ContractorCode = pl.ContractorCode ?? "",
+                        Name = pl.Name ?? ""
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        private bool TryInitWithPriceList(GemotestPriceList pl)
+        {
+            if (pl == null || string.IsNullOrWhiteSpace(pl.ContractorCode))
+                return false;
+
+            try
+            {
+                Gemotest = new GemotestService(
+                    Options.UrlAdress,
+                    Options.Login,
+                    Options.Password,
+                    pl.Name ?? "",
+                    pl.ContractorCode ?? "",
+                    Options.Salt
+                );
+
+                if (!RefreshDictionariesAtInit())
+                    return false;
+
+                Options.Contractor = pl.Name ?? "";
+                Options.Contractor_Code = pl.ContractorCode ?? "";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                last_exception = ex;
+                return false;
+            }
+        }
+
+        private static void ResolveContractorForServiceInit(OptionsGemotest o, out string contractorName, out string contractorCode)
+        {
+            contractorName = o != null ? (o.Contractor ?? "") : "";
+            contractorCode = o != null ? (o.Contractor_Code ?? "") : "";
+
+            if (!string.IsNullOrWhiteSpace(contractorCode))
+                return;
+
+            if (o == null || o.PriceLists == null)
+                return;
+
+            var first = o.PriceLists.FirstOrDefault(x => x != null && !string.IsNullOrWhiteSpace(x.ContractorCode));
+            if (first != null)
+            {
+                contractorName = first.Name ?? "";
+                contractorCode = first.ContractorCode ?? "";
+            }
+        }
     }
 }

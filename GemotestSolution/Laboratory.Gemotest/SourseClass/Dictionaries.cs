@@ -11,13 +11,11 @@ namespace Laboratory.Gemotest.GemotestRequests
 {
     public sealed class Dictionaries
     {
+        public Dictionary<string, string> Contingents { get; private set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private string _filePath = $@"C:\Users\Night\AppData\Симплекс\СиМед - Клиника\GemotestDictionaries\10003\";
 
         private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
-
-
-        public string FilePath => _filePath;
 
         public Dictionary<string, DictionaryBiomaterials> Biomaterials { get; private set; } = new Dictionary<string, DictionaryBiomaterials>(KeyComparer);
 
@@ -51,6 +49,7 @@ namespace Laboratory.Gemotest.GemotestRequests
 
         public Dictionary<string, List<DictionaryServicesSupplementals>> ServicesSupplementals { get; private set; } = new Dictionary<string, List<DictionaryServicesSupplementals>>(KeyComparer);
 
+      
 
         public IEnumerable<DictionaryService_parameters> ServiceParametersAll => ServiceParameters.Values.SelectMany(x => x);
         public IEnumerable<DictionarySamplesServices> SamplesServicesAll => SamplesServices.Values.SelectMany(x => x);
@@ -199,11 +198,11 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var sai2List = DictionaryServiceAutoInsert.Parse(sai2Content);
                 ServiceAutoInsert = BuildGroup(sai2List, x => x.service_id);
 
-
                 string ss2Content = File.ReadAllText(Path.Combine(_filePath, "Services_supplementals.xml"));
                 var ss2List = DictionaryServicesSupplementals.Parse(ss2Content);
                 ServicesSupplementals = BuildGroup(ss2List, x => x.parent_id);
 
+                Contingents = DictionaryContingent.ParseMap(ss2Content);
 
                 return true;
             }
@@ -1692,6 +1691,50 @@ namespace Laboratory.Gemotest.GemotestRequests
             var nilAttribute = node.Attributes?["nil", "http://www.w3.org/2001/XMLSchema-instance"];
             if (nilAttribute != null && nilAttribute.Value == "true") return 0f;
             return float.TryParse(node.InnerText, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : 0f;
+        }
+    }
+
+    public sealed class DictionaryContingent
+    {
+        public string code { get; set; } = string.Empty;
+        public string value { get; set; } = string.Empty;
+
+        public static Dictionary<string, string> ParseMap(string xmlContent)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(xmlContent))
+                return map;
+
+            try
+            {
+                var doc = new XmlDocument();
+                doc.LoadXml(xmlContent);
+
+                var nodes = doc.SelectNodes("//*[local-name()='contingents']/*[local-name()='item'] | //*[local-name()='contingents']//*[local-name()='item']");
+                if (nodes == null)
+                    return map;
+
+                foreach (XmlNode n in nodes)
+                {
+                    var codeNode = n.SelectSingleNode("*[local-name()='code']");
+                    var valueNode = n.SelectSingleNode("*[local-name()='value']");
+
+                    string code = (codeNode?.InnerText ?? string.Empty).Trim();
+                    string value = (valueNode?.InnerText ?? string.Empty).Trim();
+
+                    if (string.IsNullOrWhiteSpace(code))
+                        continue;
+
+                    if (!map.ContainsKey(code))
+                        map[code] = string.IsNullOrWhiteSpace(value) ? code : value;
+                }
+
+                return map;
+            }
+            catch
+            {
+                return map;
+            }
         }
     }
 }

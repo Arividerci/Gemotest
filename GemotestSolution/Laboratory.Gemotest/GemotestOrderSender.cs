@@ -114,13 +114,24 @@ namespace Laboratory.Gemotest.GemotestRequests
                 var supplementals = BuildServiceSupplementals(details);
 
                 DumpSupplementals(supplementals);
+                string doctor = "";
+
+                if (order != null && order.Worker != null )
+                {
+                    doctor = ((order.Worker.Surname ?? "") + " " + (order.Worker.Name ?? "")).Trim();
+                }
+                if (order != null && order.Author != null)
+                {
+                    doctor = ((order.Author.Surname ?? "") + " " + (order.Author.Name ?? "")).Trim();
+                }
 
                 string xml = BuildCreateOrderEnvelopeVariantA(
                     extNum,
                     orderNum,
                     _contractor,
                     createHash,
-                    order.AuthorInformation ?? "",
+                    doctor,
+                    "",
                     patient,
                     details,
                     topServices,
@@ -385,6 +396,15 @@ namespace Laboratory.Gemotest.GemotestRequests
             {
                 var p = list[i];
 
+                if (IsStandalonePrimaryRow(p, list))
+                {
+                    Console.WriteLine(
+                        "[Gemotest] skip standalone primary row: service=" + serviceId +
+                        "; sample_id=" + (p.sample_id.ToString() ?? "") +
+                        "; primary_sample_id=" + (p.primary_sample_id.ToString() ?? ""));
+                    continue;
+                }
+
                 int execSampleId = ToInt(p.sample_id, 0);
                 int serviceCount = ToInt(p.service_count, 1);
 
@@ -435,6 +455,8 @@ namespace Laboratory.Gemotest.GemotestRequests
 
                 rows.Add(row);
             }
+
+
         }
 
         private void GetSampleIdentifiersRange(int count, out long rangeStart, out long rangeEnd)
@@ -523,6 +545,7 @@ namespace Laboratory.Gemotest.GemotestRequests
             string orderNum,
             string contractor,
             string hash,
+            string doctor,
             string comment,
             Patient patient,
             GemotestOrderDetail details,
@@ -578,11 +601,11 @@ namespace Laboratory.Gemotest.GemotestRequests
             sb.Append("<urn:create_order soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
             sb.Append("<params xsi:type=\"urn:order\">");
 
-            AppendSimpleElement(sb, "ext_num", extNum, "xsd:string");
+            AppendSimpleElement(sb, "ext_num",extNum, "xsd:string");
             AppendSimpleElement(sb, "order_num", orderNum, "xsd:string");
             AppendSimpleElement(sb, "contractor", contractor, "xsd:string");
             AppendSimpleElement(sb, "hash", hash, "xsd:string");
-            AppendSimpleElement(sb, "doctor", comment, "xsd:string");
+            AppendSimpleElement(sb, "doctor", doctor, "xsd:string");
 
             sb.Append("<order_status xsi:type=\"xsd:integer\">0</order_status>");
             sb.Append("<registered xsi:type=\"xsd:integer\">1</registered>");
@@ -1184,6 +1207,24 @@ namespace Laboratory.Gemotest.GemotestRequests
 
             Console.WriteLine();
             Console.WriteLine("Всего контейнеров для отправки: " + tubes.Count.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static bool IsStandalonePrimaryRow(DictionarySamplesServices row, List<DictionarySamplesServices> rows)
+        {
+            if (row == null || rows == null || rows.Count == 0)
+                return false;
+
+            string sampleId = (row.sample_id.ToString() ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(sampleId))
+                return false;
+
+            if (!string.IsNullOrWhiteSpace((row.primary_sample_id.ToString() ?? "").Trim()))
+                return false;
+
+            return rows.Any(other =>
+                other != null &&
+                !object.ReferenceEquals(other, row) &&
+                string.Equals((other.primary_sample_id.ToString() ?? "").Trim(), sampleId, StringComparison.OrdinalIgnoreCase));
         }
 
         private void DumpSupplementals(List<SoapSupplementalItem> supplementals)

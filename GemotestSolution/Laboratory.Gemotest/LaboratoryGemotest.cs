@@ -1,4 +1,8 @@
-﻿using ContainerMarker.Common;
+﻿using System.Globalization;
+using System.Net;
+using System.Security.Cryptography;
+using System.Xml;
+using ContainerMarker.Common;
 using Laboratory.Gemotest.GemotestRequests;
 using Laboratory.Gemotest.Options;
 using SiMed.Clinic;
@@ -12,11 +16,15 @@ using System.Windows.Forms;
 using Laboratory.Gemotest.SourseClass;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 using static Laboratory.Gemotest.SourseClass.GemotestOrderDetail;
-
+using System.Runtime.InteropServices;
 namespace Laboratory.Gemotest
 {
+
     public class LaboratoryGemotest : ILaboratory
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool AllocConsole();
+
         List<DictionaryService> ProductsGemotest;
 
         public List<ProductGemotest> product;
@@ -25,11 +33,10 @@ namespace Laboratory.Gemotest
         public ProductsCollection AllProducts {  get; set; }
         public LocalOptionsGemotest LocalOptions { get; set; }
         public OptionsGemotest Options { get; set; }
-
-
         public Dictionaries Dicts { get; } = new Dictionaries();
-        private Exception last_exception = new Exception("неизвестная ошибка");
 
+        private Exception last_exception = new Exception("неизвестная ошибка");
+        private INumerator numerator;
         private LaboratoryGemotestGUI laboratoryGUI;
         public LaboratoryType GetLaboratoryType()
         {
@@ -52,7 +59,6 @@ namespace Laboratory.Gemotest
                 bool unpackSuccess = Dicts.Unpack(Gemotest.filePath);
                 if (!unpackSuccess)
                 {
-                    Console.WriteLine("Ошибка распаковки справочников.");
                     ProductsGemotest = new List<DictionaryService>();
                     return;
                 }
@@ -104,7 +110,10 @@ namespace Laboratory.Gemotest
                     ID = p.ID,
                     Code = p.Code,
                     Name = p.Name,
-                    Duration = p.Duration
+                    Duration = p.Duration,
+                    DurationInfo = !string.IsNullOrWhiteSpace(p.DurationInfo)
+                        ? p.DurationInfo
+                        : (p.Duration > 0 ? $"{p.Duration} дн." : string.Empty)
                 });
             }
 
@@ -205,6 +214,11 @@ namespace Laboratory.Gemotest
         {
             var status = _Order.State;
 
+            if (_Order != null && status != OrderState.NotSended)
+            {
+                ResultsCollection showResults = new ResultsCollection();
+                return ShowOrder(_Order, true, ref showResults);
+            }
             if (laboratoryGUI == null)
             {
                 if (!Init())
@@ -222,8 +236,6 @@ namespace Laboratory.Gemotest
                 return false;
             }
 
-            // В CreateOrder НЕ отправляем заказ: только переносим выбранные услуги в OrderDetail и открываем GUI.
-            // Канонический источник услуг для дальнейшей работы (биоматериалы/образцы/поля) — details.Products.
             if (details.Products == null)
                 details.Products = new List<GemotestOrderDetail.GemotestProductDetail>();
 
@@ -270,14 +282,72 @@ namespace Laboratory.Gemotest
                 }
             }
 
-            // Поведение как в примере Bregislab: true только если ОК или поменялся State.
             if (_Order.State != status || res == DialogResult.OK)
                 return true;
 
             return false;
         }
 
-        public bool ShowOrder(Order _Order, bool _bReadOnly, ref ResultsCollection _Results) { return false; }
+        public bool ShowOrder(Order _Order, bool _bReadOnly, ref ResultsCollection _Results)
+        {
+            var status = _Order.State;
+
+            if (laboratoryGUI == null)
+            {
+                if (!Init())
+                {
+                    MessageBox.Show("Ошибка инициализации модуля Гемотест", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+
+            GemotestOrderDetail details = _Order.OrderDetail as GemotestOrderDetail;
+            if (details == null)
+            {
+                last_exception = new Exception("OrderDetail не задан (ожидался GemotestOrderDetail).");
+                MessageBox.Show(last_exception.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            details.Dicts = Dicts;
+            ApplyPriceListToDetails(details);
+            details.AddBiomaterialsFromProducts();
+            details.DeleteObsoleteDetails();
+
+            bool readOnly = _bReadOnly || _Order.State != OrderState.NotSended;
+
+            ResultsCollection currentResults = _Results ?? new ResultsCollection();
+            OrderModelForGUI model = new OrderModelForGUI();
+
+            if (!laboratoryGUI.CreateOrderModelForGUI(readOnly, _Order, ref currentResults, ref model))
+            {
+                MessageBox.Show(GetLastException().Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            FormLaboratoryOrder form = new FormLaboratoryOrder(
+                _Laboratory: this,
+                _LaboratoryGUI: laboratoryGUI,
+                _Order: _Order,
+                _FormCaption: "Гемотест: просмотр заказа",
+                _ResultsCollection: ref currentResults,
+                _OrderModel: ref model,
+                _ReadOnly: readOnly);
+
+            var res = form.ShowDialog();
+
+            if (res == DialogResult.OK && !readOnly)
+            {
+                if (!laboratoryGUI.SaveOrderModelForGUIToDetails(_Order, model))
+                {
+                    MessageBox.Show($"Ошибка сохранения деталей заказа: {GetLastException().Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+
+            _Results = currentResults;
+            return _Order.State != status || res == DialogResult.OK;
+        }
 
         public bool SendOrder(Order _Order)
         {
@@ -402,11 +472,12 @@ namespace Laboratory.Gemotest
             else
             {
                 Gemotest = null;
-                Console.WriteLine("Предупреждение: Опции Gemotest неполные. Сервис не инициализирован.");
             }
         }
         public bool Init()
         {
+            AllocConsole();
+
             last_exception = null;
             try
             {
@@ -434,9 +505,8 @@ namespace Laboratory.Gemotest
                 laboratoryGUI = new LaboratoryGemotestGUI();
 
                 EnsureProductsLoaded();
-                AllProducts = GetProducts();
 
-                laboratoryGUI.SetAssignedModules(this, AllProducts, LocalOptions, Options);
+                laboratoryGUI.SetOptions(this, GetProducts(), LocalOptions, Options, numerator);
 
                 SiMed.Clinic.Logger.LogEvent.RemoveOldFilesFromLog("Gemotest", 30);
                 return true;
@@ -570,7 +640,10 @@ namespace Laboratory.Gemotest
             catch { }
         }
 
-        public void SetNumerator(INumerator _Numerator) { }
+        public void SetNumerator(INumerator _Numerator)
+        {
+            numerator = _Numerator;
+        }
 
         private static bool IsGemotestOptionsValid(OptionsGemotest o)
         {
@@ -585,14 +658,182 @@ namespace Laboratory.Gemotest
                    );
         }
 
-        public bool CheckResult(Order _Order, ref ResultsCollection _Results) {
-            _Results = null;
-            return false;
+        public bool CheckResult(Order _Order, ref ResultsCollection _Results)
+        {
+            last_exception = null;
+
+            try
+            {
+                if (_Results == null)
+                    _Results = new ResultsCollection();
+
+                if (_Order == null)
+                    throw new InvalidOperationException("Заказ не задан.");
+
+                _Order.SampleError = false;
+
+                if (laboratoryGUI == null)
+                {
+                    if (!Init())
+                    {
+                        MessageBox.Show("Ошибка инициализации модуля Гемотест", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                }
+
+                if (!IsGemotestOptionsValid(Options))
+                    throw new InvalidOperationException("Опции Gemotest не заполнены (Url/Login/Password/Contractor_Code/Salt).");
+
+                var details = _Order.OrderDetail as GemotestOrderDetail;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                string contractorCode = !string.IsNullOrWhiteSpace(details.PriceListCode)
+                    ? details.PriceListCode
+                    : (Options.Contractor_Code ?? string.Empty);
+
+                if (string.IsNullOrWhiteSpace(contractorCode))
+                    throw new InvalidOperationException("Не определен contractorCode для запроса результатов.");
+
+                string extNum = _Order.Number ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(extNum))
+                    throw new InvalidOperationException("У заказа отсутствует внешний номер (_Order.Number). Запросить результаты невозможно.");
+
+                OrderState statusBefore = _Order.State;
+
+                string hash = BuildContractorHash(contractorCode, Options.Salt);
+                string requestXml = BuildGetAnalysisResultEnvelope(contractorCode, hash, "", extNum);
+
+                Console.WriteLine("\n\n" + requestXml + "\n\n");
+
+                string responseXml = SendSoapRequest(Options.UrlAdress, Options.Login, Options.Password, "get_analysis_result", requestXml);
+                Console.WriteLine(responseXml);
+
+                var response = ParseGetAnalysisResultResponse(responseXml);
+
+                if (response.ErrorCode != 0)
+                {
+                    last_exception = new Exception(
+                        $"Гемотест вернул ошибку при запросе результатов. Код={response.ErrorCode}. " +
+                        $"{response.ErrorDescription}");
+                    return false;
+                }
+
+                // status: 0 - выполняется, 1 - выполнен, 2 - отказ
+                if (response.Status == 2)
+                {
+                    _Order.SampleError = true;
+                    last_exception = new Exception("По заказу получен отказ от выполнения исследования.");
+                    return false;
+                }
+
+                bool hasResults = response.ResultsCount > 0;
+                bool hasAttachments = response.AttachmentsCount > 0;
+
+                if (response.Status == 1)
+                {
+                    _Order.State = OrderState.FullResultReceived;
+                    return hasResults || hasAttachments || _Order.State != statusBefore;
+                }
+
+                // status == 0: заказ еще выполняется
+                // если что-то уже пришло частично — отметим частичные результаты
+                if (hasResults || hasAttachments)
+                {
+                    _Order.State = OrderState.PartialResultReceived;
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                last_exception = ex;
+                SiMed.Clinic.Logger.LogEvent.SaveErrorToLog(ex.Message, "Gemotest");
+                return false;
+            }
         }
 
-        public bool ExtractResult(Order _Order, ref ResultsCollection _Results) { _Results = null; return false; }
+        public bool ExtractContainers(Order _Order, ref ContainersCollection _Containers)
+        {
+            try
+            {
+                _Containers = new ContainersCollection();
 
-        public bool ExtractContainers(Order _Order, ref ContainersCollection _Containers) { _Containers = null; return false; }
+                if (_Order == null)
+                    throw new ArgumentNullException(nameof(_Order));
+
+                if (laboratoryGUI == null)
+                {
+                    if (!Init())
+                    {
+                        MessageBox.Show("Ошибка инициализации модуля Гемотест", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                }
+
+                GemotestOrderDetail details = _Order.OrderDetail as GemotestOrderDetail;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                details.Dicts = Dicts;
+
+                ResultsCollection results = new ResultsCollection();
+                OrderModelForGUI model = new OrderModelForGUI();
+
+                if (!laboratoryGUI.CreateOrderModelForGUI(true, _Order, ref results, ref model))
+                {
+                    Exception guiEx = laboratoryGUI.GetLastException();
+                    if (guiEx != null)
+                        throw guiEx;
+
+                    throw new Exception("Не удалось построить GUI-модель заказа для извлечения контейнеров.");
+                }
+
+                if (model.Samples == null || model.Samples.Count == 0)
+                    return true;
+
+                foreach (var sample in model.Samples)
+                {
+                    if (sample == null || sample.Biomaterial == null)
+                        continue;
+
+                    Container labContainer = new Container();
+                    labContainer.BarCode = sample.Barcode ?? string.Empty;
+                    labContainer.Code = sample.Biomaterial.ContainerCode ?? string.Empty;
+                    labContainer.Name = sample.Biomaterial.ContainerName ?? string.Empty;
+                    labContainer.BioMaterialName = sample.Biomaterial.BiomaterialName ?? string.Empty;
+                    labContainer.Comment = string.Empty;
+
+                    _Containers.Add(labContainer);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                last_exception = e;
+                MessageBox.Show("Ошибка при извлечении сведений о контейнерах (лаборатория Гемотест): " + e.Message);
+                return false;
+            }
+        }
+
+        public bool ExtractResult(Order _Order, ref ResultsCollection _Results)
+        {
+            try
+            {
+                if (_Results == null)
+                    _Results = new ResultsCollection();
+
+                // Пока проверка результата, позже если результат пришел, вывлдим результат,
+                return CheckResult(_Order, ref _Results);
+            }
+            catch (Exception e)
+            {
+                last_exception = e;
+                return false;
+            }
+            }
 
         public void SetContainerMarkerList(List<IContainerMarker> _ContainerMarkerList) { }
 
@@ -695,5 +936,155 @@ namespace Laboratory.Gemotest
                 contractorCode = first.ContractorCode ?? "";
             }
         }
+
+        private static string BuildContractorHash(string contractor, string salt)
+        {
+            string plain = (contractor ?? "") + (salt ?? "");
+
+            using (var sha1 = SHA1.Create())
+            {
+                byte[] data = Encoding.UTF8.GetBytes(plain);
+                byte[] hash = sha1.ComputeHash(data);
+
+                var sb = new StringBuilder(hash.Length * 2);
+                for (int i = 0; i < hash.Length; i++)
+                    sb.Append(hash[i].ToString("x2"));
+
+                return sb.ToString();
+            }
+        }
+
+        private static string BuildGetAnalysisResultEnvelope(string contractor, string hash, string orderNum, string extNum)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.Append("<soapenv:Envelope ");
+            sb.Append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ");
+            sb.Append("xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" ");
+            sb.Append("xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" ");
+            sb.Append("xmlns:urn=\"urn:OdoctorControllerwsdl\" ");
+            sb.Append("xmlns:soapenc=\"http://schemas.xmlsoap.org/soap/encoding/\">");
+            sb.Append("<soapenv:Header/>");
+            sb.Append("<soapenv:Body>");
+            sb.Append("<urn:get_analysis_result soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
+            sb.Append("<params xsi:type=\"urn:request_get_analysis_result\">");
+
+            sb.Append("<contractor xsi:type=\"xsd:string\">").Append(SecurityElementEscape(contractor)).Append("</contractor>");
+            sb.Append("<hash xsi:type=\"xsd:string\">").Append(SecurityElementEscape(hash)).Append("</hash>");
+            sb.Append("<order_num xsi:type=\"xsd:string\">").Append(SecurityElementEscape(orderNum)).Append("</order_num>");
+            sb.Append("<ext_num xsi:type=\"xsd:string\">").Append(SecurityElementEscape(extNum ?? "")).Append("</ext_num>");
+
+            sb.Append("</params>");
+            sb.Append("</urn:get_analysis_result>");
+            sb.Append("</soapenv:Body>");
+            sb.Append("</soapenv:Envelope>");
+
+            return sb.ToString();
+        }
+
+        private static string SendSoapRequest(string url, string login, string password, string method, string xmlBody)
+        {
+            string soapAction = "\"urn:OdoctorControllerwsdl#" + method + "\"";
+
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.Method = "POST";
+            request.ContentType = "text/xml; charset=utf-8";
+            request.Headers["SOAPAction"] = soapAction;
+
+            string credentials = (login ?? "") + ":" + (password ?? "");
+            string authHeader = Convert.ToBase64String(Encoding.ASCII.GetBytes(credentials));
+            request.Headers["Authorization"] = "Basic " + authHeader;
+            request.PreAuthenticate = true;
+
+            byte[] payload = Encoding.UTF8.GetBytes(xmlBody);
+            request.ContentLength = payload.Length;
+
+            using (var reqStream = request.GetRequestStream())
+                reqStream.Write(payload, 0, payload.Length);
+
+            using (var response = (HttpWebResponse)request.GetResponse())
+            using (var stream = response.GetResponseStream())
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
+                return reader.ReadToEnd();
+        }
+
+        private sealed class GemotestAnalysisResultResponse
+        {
+            public int ErrorCode;
+            public string ErrorDescription;
+            public int Status;
+            public int ResultsCount;
+            public int AttachmentsCount;
+        }
+
+        private static GemotestAnalysisResultResponse ParseGetAnalysisResultResponse(string xml)
+        {
+            var result = new GemotestAnalysisResultResponse
+            {
+                ErrorCode = -1,
+                ErrorDescription = "Пустой ответ"
+            };
+
+            if (string.IsNullOrWhiteSpace(xml))
+                return result;
+
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            XmlNode returnNode = doc.SelectSingleNode("//*[local-name()='get_analysis_resultResponse']/*[local-name()='return']");
+            if (returnNode == null)
+            {
+                result.ErrorDescription = "Не найден узел return в ответе get_analysis_result.";
+                return result;
+            }
+
+            result.ErrorCode = ParseInt(GetNodeText(returnNode, "error_code"), -1);
+            result.ErrorDescription = GetNodeText(returnNode, "error_description");
+            result.Status = ParseInt(GetNodeText(returnNode, "status"), 0);
+
+            XmlNodeList clItems = returnNode.SelectNodes(".//*[local-name()='results_cl']/*[local-name()='item']");
+            if (clItems != null)
+                result.ResultsCount += clItems.Count;
+
+            XmlNodeList mbItems = returnNode.SelectNodes(".//*[local-name()='results_mb']/*[local-name()='item']");
+            if (mbItems != null)
+                result.ResultsCount += mbItems.Count;
+
+            XmlNodeList attItems = returnNode.SelectNodes(".//*[local-name()='attachments']/*[local-name()='item']");
+            if (attItems != null)
+                result.AttachmentsCount = attItems.Count;
+
+            return result;
+        }
+
+        private static string GetNodeText(XmlNode parent, string localName)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(localName))
+                return string.Empty;
+
+            XmlNode node = parent.SelectSingleNode(".//*[local-name()='" + localName + "']");
+            return node != null ? (node.InnerText ?? string.Empty).Trim() : string.Empty;
+        }
+
+        private static int ParseInt(string s, int defValue)
+        {
+            int v;
+            return int.TryParse((s ?? "").Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out v) ? v : defValue;
+        }
+
+        private static string SecurityElementEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            return value
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;");
+        }
+
     }
 }

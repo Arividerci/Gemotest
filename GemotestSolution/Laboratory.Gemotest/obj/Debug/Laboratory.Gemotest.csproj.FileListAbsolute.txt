@@ -17,10 +17,8 @@ C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Lab
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\bin\Debug\WordReport.dll
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\bin\Debug\zxing.dll
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.AssemblyReference.cache
-C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.FormAdditionalPatientInfo.resources
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.LocalOptionsForm.resources
-C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.OptionsFormsGemotest.resources
-C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.SupplementalsForm.resources
+C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.Options.GemotestSystemOptionsForm.resources
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.GenerateResource.cache
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.csproj.CoreCompileInputs.cache
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laborato.6E2FAB54.Up2Date

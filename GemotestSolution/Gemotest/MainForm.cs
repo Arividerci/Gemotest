@@ -37,7 +37,7 @@ namespace Gemotest
         private string SystemOptions = null;
         private string LocalOptions = null;
         private Order _currentOrder;
-        public OptionsGemotest Options;
+        public SystemOptions Options;
 
         public MainForm()
         {
@@ -152,9 +152,9 @@ namespace Gemotest
                 );
 
                 string xml = client.GetAnalysisResultRaw(orderNum);
-
+                Console.WriteLine(xml + "\n\n");
                 var parsed = GemotestAnalysisResultParser.Parse(xml);
-
+                Console.WriteLine(parsed + "\n\n");
                 var form = new FormGemotestResult(parsed);
                 form.ShowDialog(this);
             }

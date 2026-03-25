@@ -40,11 +40,12 @@
             this.connectionGroupBox = new System.Windows.Forms.GroupBox();
             this.label6 = new System.Windows.Forms.Label();
             this.PriceList_dataGridView = new System.Windows.Forms.DataGridView();
-            this.Name = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Code = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.StatusConection = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.CheckConnection_button = new System.Windows.Forms.Button();
             this.Exit_button = new System.Windows.Forms.Button();
+            this.Name = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Code = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Num = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.StatusConection = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.connectionGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PriceList_dataGridView)).BeginInit();
             this.SuspendLayout();
@@ -100,7 +101,7 @@
             // go_button
             // 
             this.go_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.go_button.Location = new System.Drawing.Point(438, 454);
+            this.go_button.Location = new System.Drawing.Point(503, 454);
             this.go_button.Name = "go_button";
             this.go_button.Size = new System.Drawing.Size(110, 35);
             this.go_button.TabIndex = 2;
@@ -140,7 +141,7 @@
             this.connectionGroupBox.Controls.Add(this.key_textBox);
             this.connectionGroupBox.Location = new System.Drawing.Point(24, 12);
             this.connectionGroupBox.Name = "connectionGroupBox";
-            this.connectionGroupBox.Size = new System.Drawing.Size(669, 426);
+            this.connectionGroupBox.Size = new System.Drawing.Size(799, 426);
             this.connectionGroupBox.TabIndex = 1;
             this.connectionGroupBox.TabStop = false;
             this.connectionGroupBox.Text = "Параметры подключения";
@@ -161,17 +162,40 @@
             this.PriceList_dataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Name,
             this.Code,
+            this.Num,
             this.StatusConection});
             this.PriceList_dataGridView.Location = new System.Drawing.Point(10, 232);
             this.PriceList_dataGridView.Name = "PriceList_dataGridView";
             this.PriceList_dataGridView.RowHeadersWidth = 51;
             this.PriceList_dataGridView.RowTemplate.Height = 24;
-            this.PriceList_dataGridView.Size = new System.Drawing.Size(653, 123);
+            this.PriceList_dataGridView.Size = new System.Drawing.Size(778, 123);
             this.PriceList_dataGridView.TabIndex = 3;
+            // 
+            // CheckConnection_button
+            // 
+            this.CheckConnection_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.CheckConnection_button.Location = new System.Drawing.Point(99, 454);
+            this.CheckConnection_button.Name = "CheckConnection_button";
+            this.CheckConnection_button.Size = new System.Drawing.Size(194, 35);
+            this.CheckConnection_button.TabIndex = 4;
+            this.CheckConnection_button.Text = " Проверка соединения";
+            this.CheckConnection_button.UseVisualStyleBackColor = true;
+            this.CheckConnection_button.Click += new System.EventHandler(this.CheckConnection_button_Click);
+            // 
+            // Exit_button
+            // 
+            this.Exit_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.Exit_button.Location = new System.Drawing.Point(619, 454);
+            this.Exit_button.Name = "Exit_button";
+            this.Exit_button.Size = new System.Drawing.Size(110, 35);
+            this.Exit_button.TabIndex = 5;
+            this.Exit_button.Text = "Отмена";
+            this.Exit_button.UseVisualStyleBackColor = true;
+            this.Exit_button.Click += new System.EventHandler(this.Exit_button_Click);
             // 
             // Name
             // 
-            this.Name.HeaderText = "Контрагент";
+            this.Name.HeaderText = "Наименование контрагент";
             this.Name.MinimumWidth = 6;
             this.Name.Name = "Name";
             this.Name.Width = 250;
@@ -183,6 +207,13 @@
             this.Code.Name = "Code";
             this.Code.Width = 150;
             // 
+            // Num
+            // 
+            this.Num.HeaderText = "Начальная нумерация заказа";
+            this.Num.MinimumWidth = 6;
+            this.Num.Name = "Num";
+            this.Num.Width = 125;
+            // 
             // StatusConection
             // 
             this.StatusConection.HeaderText = "Статус соединения";
@@ -190,33 +221,11 @@
             this.StatusConection.Name = "StatusConection";
             this.StatusConection.Width = 200;
             // 
-            // CheckConnection_button
-            // 
-            this.CheckConnection_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.CheckConnection_button.Location = new System.Drawing.Point(34, 454);
-            this.CheckConnection_button.Name = "CheckConnection_button";
-            this.CheckConnection_button.Size = new System.Drawing.Size(194, 35);
-            this.CheckConnection_button.TabIndex = 4;
-            this.CheckConnection_button.Text = " Проверка соединения";
-            this.CheckConnection_button.UseVisualStyleBackColor = true;
-            this.CheckConnection_button.Click += new System.EventHandler(this.CheckConnection_button_Click);
-            // 
-            // Exit_button
-            // 
-            this.Exit_button.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.Exit_button.Location = new System.Drawing.Point(554, 454);
-            this.Exit_button.Name = "Exit_button";
-            this.Exit_button.Size = new System.Drawing.Size(110, 35);
-            this.Exit_button.TabIndex = 5;
-            this.Exit_button.Text = "Отмена";
-            this.Exit_button.UseVisualStyleBackColor = true;
-            this.Exit_button.Click += new System.EventHandler(this.Exit_button_Click);
-            // 
-            // OptionsFormsGemotest
+            // GemotestSystemOptionsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(717, 549);
+            this.ClientSize = new System.Drawing.Size(847, 549);
             this.Controls.Add(this.Exit_button);
             this.Controls.Add(this.CheckConnection_button);
             this.Controls.Add(this.go_button);
@@ -248,10 +257,11 @@
         private System.Windows.Forms.GroupBox connectionGroupBox;
         private System.Windows.Forms.DataGridView PriceList_dataGridView;
         private System.Windows.Forms.Button CheckConnection_button;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Name;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Code;
-        private System.Windows.Forms.DataGridViewTextBoxColumn StatusConection;
         private System.Windows.Forms.Button Exit_button;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Name;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Code;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Num;
+        private System.Windows.Forms.DataGridViewTextBoxColumn StatusConection;
     }
 }

@@ -17,6 +17,7 @@ using Laboratory.Gemotest.SourseClass;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 using static Laboratory.Gemotest.SourseClass.GemotestOrderDetail;
 using System.Runtime.InteropServices;
+using Laboratory.Gemotest.GUI;
 namespace Laboratory.Gemotest
 {
 
@@ -44,42 +45,6 @@ namespace Laboratory.Gemotest
             return (LaboratoryType)24;
 
         }
-        // Test
-
-        private const string TestResultOrderNum = "118569168";
-
-        private bool TryChooseResultRequestNumbers(Order order, out string requestOrderNum, out string requestExtNum)
-        {
-            requestOrderNum = string.Empty;
-            requestExtNum = string.Empty;
-
-            string currentExtNum = order != null ? (order.Number ?? string.Empty) : string.Empty;
-
-            var choice = MessageBox.Show(
-                "Запросить результаты:\r\n\r\n" +
-                "Да — по текущему ext_num заказа: " + currentExtNum + "\r\n" +
-                "Нет — по тестовому order_num: " + TestResultOrderNum + "\r\n" +
-                "Отмена — не выполнять запрос.",
-                "Гемотест: выбор номера для запроса результатов",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question);
-
-            if (choice == DialogResult.Cancel)
-                return false;
-
-            if (choice == DialogResult.Yes)
-            {
-                requestExtNum = currentExtNum;
-            }
-            else
-            {
-                requestOrderNum = TestResultOrderNum;
-            }
-
-            return true;
-        }
-
-        // Test
 
         private void EnsureProductsLoaded()
         {
@@ -159,7 +124,11 @@ namespace Laboratory.Gemotest
 
         public Product ChooseProduct(Product _SourceProduct = null) {
 
-            return null;
+            EnsureProductsLoaded();
+
+            GemotestChoiceOfProductForm form = new GemotestChoiceOfProductForm(_SourceProduct, product);
+            form.ShowDialog();
+            return form.SelectedProduct;
         }
 
 
@@ -512,7 +481,7 @@ namespace Laboratory.Gemotest
         }
         public bool Init()
         {
-            //AllocConsole();
+            AllocConsole();
 
             last_exception = null;
             try
@@ -731,28 +700,16 @@ namespace Laboratory.Gemotest
                 if (string.IsNullOrWhiteSpace(contractorCode))
                     throw new InvalidOperationException("Не определен contractorCode для запроса результатов.");
 
-                // закоменчено на время тестирования
-                /* string extNum = _Order.Number ?? string.Empty;
+                 string extNum = _Order.Number ?? string.Empty;
                  if (string.IsNullOrWhiteSpace(extNum))
                      throw new InvalidOperationException("У заказа отсутствует внешний номер (_Order.Number). Запросить результаты невозможно.");
 
                  OrderState statusBefore = _Order.State;
 
                  string hash = BuildContractorHash(contractorCode, Options.Salt);
-                 string requestXml = BuildGetAnalysisResultEnvelope(contractorCode, hash, "", extNum);*/
+                 string requestXml = BuildGetAnalysisResultEnvelope(contractorCode, hash, "", extNum);
 
-                string requestOrderNum;
-                string requestExtNum;
-
-                if (!TryChooseResultRequestNumbers(_Order, out requestOrderNum, out requestExtNum))
-                    return false;
-
-                OrderState statusBefore = _Order.State;
-
-                string hash = BuildContractorHash(contractorCode, Options.Salt);
-                string requestXml = BuildGetAnalysisResultEnvelope(contractorCode, hash, requestOrderNum, requestExtNum);
-
-                // закоменчено на время тестирования
+                
 
                 Console.WriteLine("\n\n" + requestXml + "\n\n");
 

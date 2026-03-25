@@ -15,12 +15,14 @@ namespace Laboratory.Gemotest
     public class GemotestPriceList
     {
         public string ContractorCode { get; set; } 
-        public string Name { get; set; }            
+        public string Name { get; set; }      
+        public string Num { get; set; }
 
         public GemotestPriceList()
         {
             ContractorCode = "";
             Name = "";
+            Num = "1";
         }
     }
 
@@ -32,6 +34,7 @@ namespace Laboratory.Gemotest
         public string Password { get; set; } = "F(SP{2JPg";
         public string Contractor { get; set; } 
         public string Contractor_Code { get; set; }
+        public string Numerator { get; set; } = "1";
         public string Salt { get; set; } = "b4f6d7d2fe94123c03c86412a0b649494017463f";
 
         public System.Collections.Generic.List<GemotestPriceList> PriceLists { get; set; }

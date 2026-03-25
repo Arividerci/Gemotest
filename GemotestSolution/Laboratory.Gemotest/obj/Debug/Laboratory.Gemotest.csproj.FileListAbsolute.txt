@@ -24,3 +24,4 @@ C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Lab
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laborato.6E2FAB54.Up2Date
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.dll
 C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.pdb
+C:\Users\Night\OneDrive\Desktop\Gemotest-main\Gemotest-main\GemotestSolution\Laboratory.Gemotest\obj\Debug\Laboratory.Gemotest.GUI.GemotestChoiceOfProductForm.resources

@@ -1037,22 +1037,27 @@ namespace Laboratory.Gemotest
                         if (numerator == null)
                             throw new InvalidOperationException("Не задан numerator для Gemotest.");
 
+                        var orderDetails = _Order.OrderDetail as GemotestOrderDetail;
+                        string priceListCode = orderDetails?.PriceListCode ?? "";
+                        string priceListNum = orderDetails?.PriceListNum ?? "";
+
                         int nextNumber = numerator.GetNextNumber(
                             "GemotestOrderNum",
                             DateTime.Now,
-                            "",
-                            "",
+                            priceListCode,
+                            priceListNum,
                             ""
                         );
+                        long nextNum = nextNumber + long.Parse(priceListNum) - 1;
 
-                        if (nextNumber <= 0)
+                        Console.WriteLine("\n\n-------------", nextNumber.ToString(), " ", priceListCode ," ",priceListNum, "-----------\n") ;
+                        if (nextNum <= 0)
                             throw new Exception("Не удалось получить номер заказа Gemotest через numerator.");
 
-                        _Order.Number = "SiMed-" + nextNumber.ToString();
+                        _Order.Number = nextNum.ToString();
                     }
 
                     _Order.State = OrderState.Prepared;
-                    
                     return true;
                 }
 
@@ -1395,8 +1400,13 @@ namespace Laboratory.Gemotest
         {
             try
             {
-                string text = _Order?.OrderDetail?.ToString() ?? string.Empty;
-                MessageBox.Show(text, "Подробности заказа", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var details = _Order != null ? _Order.OrderDetail as GemotestOrderDetail : null;
+                if (details == null)
+                    throw new InvalidOperationException("OrderDetail не является GemotestOrderDetail.");
+
+                string detailsString = details.Pack();
+                FormLaboratoryOrderDetails form = new FormLaboratoryOrderDetails(ref detailsString, "Подробности заказа Гемотест");
+                form.ShowDialog();
             }
             catch (Exception exc)
             {
@@ -1592,13 +1602,16 @@ namespace Laboratory.Gemotest
                 string roId = !string.IsNullOrWhiteSpace(details.PriceListCode)
                     ? details.PriceListCode
                     : roName;
+                string roNum = !string.IsNullOrWhiteSpace(details.PriceListNum)
+                    ? details.PriceListNum
+                    : "1";
 
                 if (!string.IsNullOrWhiteSpace(roName) || !string.IsNullOrWhiteSpace(roId))
                 {
                     model.PriceLists.Add(new PriceListForGUI()
                     {
                         Id = roId ?? string.Empty,
-                        Name = roName ?? string.Empty
+                        Name = roName ?? string.Empty,
                     });
                     model.PriceListSelected = model.PriceLists[0];
                 }
@@ -1670,6 +1683,7 @@ namespace Laboratory.Gemotest
             details.PriceList = string.Empty;
             details.PriceListName = string.Empty;
             details.PriceListCode = string.Empty;
+            details.PriceListNum = string.Empty;
 
             var selected = model?.PriceListSelected;
             if (selected == null)
@@ -1690,6 +1704,7 @@ namespace Laboratory.Gemotest
                     details.PriceList = pl.Name ?? string.Empty;
                     details.PriceListName = pl.Name ?? string.Empty;
                     details.PriceListCode = pl.ContractorCode ?? string.Empty;
+                    details.PriceListNum = pl.Num ?? string.Empty; 
                     return;
                 }
             }
@@ -1703,6 +1718,7 @@ namespace Laboratory.Gemotest
                 details.PriceList = byName.Name ?? string.Empty;
                 details.PriceListName = byName.Name ?? string.Empty;
                 details.PriceListCode = byName.ContractorCode ?? string.Empty;
+                details.PriceListNum = byName.Num ?? string.Empty;
                 return;
             }
 

@@ -146,8 +146,9 @@ namespace Laboratory.Gemotest.SourseClass
         public List<GemotestBioMaterial> BioMaterials { get; set; }
         public List<Product> DefectProductList { get; set; }
         public string PriceList { get; set; }
-        public string PriceListCode { get; set; }  // код контрагента
-        public string PriceListName { get; set; }  // название/описание
+        public string PriceListCode { get; set; }  
+        public string PriceListName { get; set; } 
+        public string PriceListNum { get; set; }
         public List<GemotestSampleDetail> Samples { get; set; }
 
         [XmlIgnore]
@@ -168,6 +169,7 @@ namespace Laboratory.Gemotest.SourseClass
             Products = new List<GemotestProductDetail>();
             Results = new List<GemotestResultDetail>();
             Attachments = new List<GemotestAttachmentDetail>();
+            LaboratoryType = (LaboratoryType)24;
 
         }
 

@@ -91,10 +91,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GUI\GemotestChoiceOfProductForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GUI\GemotestChoiceOfProductForm.Designer.cs">
+      <DependentUpon>GemotestChoiceOfProductForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Laboratory\DataSetBlankGemotest.cs" />
     <Compile Include="Laboratory\GemotestOrderDetails.cs" />
     <Compile Include="Laboratory\GemotestOrderSender.cs" />
     <Compile Include="Laboratory\SampleServiceRow.cs" />
+    <Compile Include="Reports\DataSetForReportGemotest.cs" />
     <Compile Include="Reports\GemotestBlankReportDataSetV2.cs" />
     <Compile Include="SourseClass\Dictionaries.cs" />
     <Compile Include="Laboratory\LaboratoryGemotest.cs" />
@@ -118,6 +125,9 @@
     <Compile Include="SourseClass\ProductGemotest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="GUI\GemotestChoiceOfProductForm.resx">
+      <DependentUpon>GemotestChoiceOfProductForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="GUI\LocalOptionsForm.resx">
       <DependentUpon>LocalOptionsForm.cs</DependentUpon>
     </EmbeddedResource>

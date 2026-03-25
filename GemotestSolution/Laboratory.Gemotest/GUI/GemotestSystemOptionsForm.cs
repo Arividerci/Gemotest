@@ -54,7 +54,7 @@ namespace Laboratory.Gemotest.Options
                 foreach (var pl in Options.PriceLists)
                 {
                     if (pl == null) continue;
-                    AddGridRow(pl.Name, pl.ContractorCode, "");
+                    AddGridRow(pl.Name, pl.ContractorCode, pl.Num ,"");
                 }
             }
 
@@ -65,6 +65,7 @@ namespace Laboratory.Gemotest.Options
             {
                 Options.Contractor = Options.PriceLists[0].Name ?? "";
                 Options.Contractor_Code = Options.PriceLists[0].ContractorCode ?? "";
+                Options.Numerator = Options.PriceLists[0].Num ?? "1";
 
                 if (PriceList_dataGridView.Rows.Count > 0)
                     PriceList_dataGridView.Rows[0].Selected = true;
@@ -92,13 +93,14 @@ namespace Laboratory.Gemotest.Options
             PriceList_dataGridView.ClearSelection();
         }
 
-        private void AddGridRow(string contractorName, string contractorCode, string status)
+        private void AddGridRow(string contractorName, string contractorCode, string contractorNum, string status)
         {
             int idx = PriceList_dataGridView.Rows.Add();
             var row = PriceList_dataGridView.Rows[idx];
             row.Cells[0].Value = contractorName ?? "";
             row.Cells[1].Value = contractorCode ?? "";
-            row.Cells[2].Value = status ?? "";
+            row.Cells[2].Value = contractorNum ?? "1";
+            row.Cells[3].Value = status ?? "";
         }
 
         private void Exit_button_Click(object sender, EventArgs e)
@@ -125,6 +127,7 @@ namespace Laboratory.Gemotest.Options
 
             var selName = (selected.Cells[0].Value ?? "").ToString().Trim();
             var selCode = (selected.Cells[1].Value ?? "").ToString().Trim();
+            var selNum = (selected.Cells[2].Value ?? "1").ToString().Trim();
 
             if (string.IsNullOrEmpty(selCode))
             {
@@ -140,6 +143,7 @@ namespace Laboratory.Gemotest.Options
             Options.PriceLists = list;
             Options.Contractor = selName;
             Options.Contractor_Code = selCode;
+            Options.Numerator = selNum;
 
             Options.SaveToFile(filePath);
 
@@ -171,6 +175,7 @@ namespace Laboratory.Gemotest.Options
 
                 var name = (row.Cells[0].Value ?? "").ToString().Trim();
                 var code = (row.Cells[1].Value ?? "").ToString().Trim();
+                var num = (row.Cells[2].Value ?? "1").ToString().Trim();
 
                 if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(code))
                     continue;
@@ -178,7 +183,7 @@ namespace Laboratory.Gemotest.Options
                 if (!string.IsNullOrEmpty(code) && list.Any(x => string.Equals((x.ContractorCode ?? "").Trim(), code, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
-                list.Add(new GemotestPriceList { Name = name, ContractorCode = code });
+                list.Add(new GemotestPriceList { Name = name, ContractorCode = code , Num = num});
             }
 
             return list;
@@ -201,7 +206,7 @@ namespace Laboratory.Gemotest.Options
             foreach (DataGridViewRow row in PriceList_dataGridView.Rows)
             {
                 if (row.IsNewRow) continue;
-                row.Cells[2].Value = "проверяю…";
+                row.Cells[3].Value = "проверяю…";
                 row.DefaultCellStyle.BackColor = System.Drawing.Color.White;
             }
 
@@ -239,7 +244,7 @@ namespace Laboratory.Gemotest.Options
                 return;
             }
 
-            row.Cells[2].Value = text;
+            row.Cells[3].Value = text;
             row.DefaultCellStyle.BackColor = ok ? System.Drawing.Color.Honeydew : System.Drawing.Color.MistyRose;
         }
 
